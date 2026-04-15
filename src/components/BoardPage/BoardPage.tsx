@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Box, Group, ActionIcon, Button, Text, Tooltip, Loader, Center, Tabs } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
-  DndContext,
-  DragOverlay,
-  closestCorners,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core';
+  Box,
+  Group,
+  ActionIcon,
+  Button,
+  Text,
+  Tooltip,
+  Loader,
+  Center,
+  Tabs,
+  Flex,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
 import {
   IconMessageCircle,
   IconLayoutKanban,
@@ -21,7 +23,6 @@ import {
 } from '@tabler/icons-react';
 import { logoutUser } from '@/lib/pocketbase';
 import { KanbanColumn } from './KanbanColumn';
-import { TaskCard } from './TaskCard';
 import { useProject, useTasks, useUpdateTask } from '@/queries';
 import { TASK_STATUSES, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskModal } from './TaskModal';
@@ -39,15 +40,12 @@ export function BoardPage({ projectId }: Props) {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId);
   const updateTask = useUpdateTask(projectId);
 
-  const [activeTask, setActiveTask] = useState<TaskExpanded | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskExpanded | null>(null);
   const [taskModalOpen, { open: openTaskModal, close: closeTaskModal }] = useDisclosure(false);
   const [addModalOpen, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
   const [defaultStatus, setDefaultStatus] = useState<TaskStatus>('backlog');
   const [chatOpen, setChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('board');
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const owner = project?.expand.owner;
   const invited = project?.expand?.invited ?? [];
@@ -64,31 +62,17 @@ export function BoardPage({ projectId }: Props) {
     >
   );
 
-  const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveTask(tasks.find((t) => t.id === active.id) ?? null);
-  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { source, target } = event.operation;
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveTask(null);
-    if (!over) return;
+    if (!target || !source) return;
+    if (source.type === 'column') return;
 
-    const taskId = active.id as string;
-    const statusBoard = over.id as TaskStatus;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
+    const task = source.data as TaskExpanded;
+    const status = target.id as TaskStatus;
 
-    // Dropped on a column
-    if (TASK_STATUSES.includes(over.id as TaskStatus)) {
-      if (task.status !== over.id) {
-        updateTask.mutate({ id: taskId as string, data: { status: statusBoard } });
-      }
-      return;
-    }
-
-    // Dropped on another task — find its column
-    const overTask = tasks.find((t) => t.id === over.id);
-    if (overTask && overTask.status !== task.status) {
-      updateTask.mutate({ id: taskId, data: { status: overTask.status } });
+    if (task.status !== status) {
+      updateTask.mutate({ id: task.id, data: { status } });
     }
   };
 
@@ -170,20 +154,8 @@ export function BoardPage({ projectId }: Props) {
         <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Kanban board */}
           <Box style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <Box
-                style={{
-                  display: 'flex',
-                  gap: 16,
-                  minWidth: 'max-content',
-                  alignItems: 'flex-start',
-                }}
-              >
+            <DragDropProvider onDragEnd={handleDragEnd}>
+              <Flex gap="sm">
                 {TASK_STATUSES.map((status) => {
                   const tasks = tasksByStatus[status];
                   return (
@@ -196,16 +168,8 @@ export function BoardPage({ projectId }: Props) {
                     />
                   );
                 })}
-              </Box>
-
-              <DragOverlay>
-                {activeTask ? (
-                  <Box style={{ transform: 'rotate(2deg)', opacity: 0.9 }}>
-                    <TaskCard task={activeTask} onClick={() => {}} />
-                  </Box>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+              </Flex>
+            </DragDropProvider>
           </Box>
 
           {/* Chat panel */}

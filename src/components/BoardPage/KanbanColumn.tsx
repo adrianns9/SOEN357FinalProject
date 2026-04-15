@@ -1,11 +1,11 @@
-import { Box, Text, Group, ActionIcon, Badge } from '@mantine/core';
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Box, Text, Group, ActionIcon, Badge, Card, Flex, Stack } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { STATUS_META, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskCard } from './TaskCard';
+import { useDroppable } from '@dnd-kit/react';
+import { CollisionPriority } from '@dnd-kit/abstract';
 
-interface Props extends React.ComponentPropsWithRef<'div'> {
+interface Props {
   status: TaskStatus;
   tasks: TaskExpanded[];
   onAddTask: (status: TaskStatus) => void;
@@ -13,40 +13,47 @@ interface Props extends React.ComponentPropsWithRef<'div'> {
 }
 
 export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { ref, isDropTarget } = useDroppable({
+    id: status,
+    type: 'column',
+    accept: 'item',
+    collisionPriority: CollisionPriority.Low,
+  });
   const meta = STATUS_META[status];
 
   return (
-    <Box className="kanban-col" style={{ outline: isOver ? `2px solid ${meta.color}` : undefined }}>
-      <Box className="kanban-col-header">
-        <Group gap={6}>
-          <Box style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color }} />
-          <Text inherit>{meta.label}</Text>
-          <Badge
-            size="xs"
-            variant="filled"
-            color="gray"
-            radius="xl"
-            style={{ background: '#E5E7EB', color: '#6B7280' }}
-          >
-            {tasks.length}
-          </Badge>
+    <Card
+      ref={ref}
+      withBorder
+      className="kanban-col"
+      style={{ flex: 1, outline: isDropTarget ? `2px solid ${meta.color}` : undefined }}
+    >
+      <Stack>
+        <Group justify="space-between" className="kanban-col-header">
+          <Group gap={6}>
+            <Box style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color }} />
+            <Text inherit>{meta.label}</Text>
+            <Badge
+              size="xs"
+              variant="filled"
+              color="gray"
+              radius="xl"
+              style={{ background: '#E5E7EB', color: '#6B7280' }}
+            >
+              {tasks.length}
+            </Badge>
+          </Group>
+          <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => onAddTask(status)}>
+            <IconPlus size={14} />
+          </ActionIcon>
         </Group>
-        <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => onAddTask(status)}>
-          <IconPlus size={14} />
-        </ActionIcon>
-      </Box>
 
-      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-        <Box
-          ref={setNodeRef}
-          style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 60, flex: 1 }}
-        >
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+        <Stack gap="sm">
+          {tasks.map((task, index) => (
+            <TaskCard key={task.id} index={index} task={task} onClick={() => onTaskClick(task)} />
           ))}
-        </Box>
-      </SortableContext>
-    </Box>
+        </Stack>
+      </Stack>
+    </Card>
   );
 }

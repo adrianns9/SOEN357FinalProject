@@ -14,6 +14,6 @@ export const tasksApi = {
     crudApi.getList({
       filter: `project="${projectId}"`,
       sort: '-created',
-      expand: 'owner,assignee',
+      expand: 'assignee',
     }),
 };
