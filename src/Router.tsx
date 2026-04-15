@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import AuthPage from './pages/Auth.page';
 import BoardPage from './pages/Board.page';
 import ProjectsPage from './pages/Projects.page';
+import InvitePage from './pages/Invite.page';
 import { isLoggedIn } from '@/lib/pocketbase';
 
 export function ProtectedRoute() {
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
   {
     path: 'auth',
     element: <AuthPage />,
+  },
+  {
+    path: 'invite/:projectId',
+    element: <InvitePage />,
   },
   {
     path: '/',

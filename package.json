@@ -17,13 +17,15 @@
     "vitest:watch": "vitest",
     "test": "npm run typecheck && npm run format:test && npm run lint && npm run vitest && npm run build",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "start:database": "docker run -d --name pocketbase -p 8090:8090 -v $(pwd)/pb_data:/pb_data -e PB_ADMIN_EMAIL=admin@example.com -e PB_ADMIN_PASSWORD=password ghcr.io/muchobien/pocketbase:latest"
   },
   "dependencies": {
     "@dnd-kit/abstract": "^0.4.0",
     "@dnd-kit/helpers": "^0.4.0",
     "@dnd-kit/react": "^0.4.0",
     "@mantine/core": "9.0.0",
+    "@mantine/form": "^9.0.2",
     "@mantine/hooks": "9.0.0",
     "@mantine/modals": "^9.0.0",
     "@mantine/notifications": "^9.0.0",
@@ -56,6 +58,7 @@
     "stylelint-config-standard-scss": "^17.0.0",
     "typescript": "6.0.2",
     "vite": "^8.0.0",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.0"
   },
   "packageManager": "yarn@4.13.0"

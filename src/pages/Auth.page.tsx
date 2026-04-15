@@ -14,41 +14,47 @@ import {
 } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { authWithPassword, isLoggedIn, pb } from '@/lib/pocketbase';
+import { useSearchParams } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 
 export default function Component() {
+  const [params] = useSearchParams();
+  const redirect = params.get('redirect') || '/projects';
+  const isInviteFlow = params.has('redirect');
+
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ email: '', password: '', name: '' });
+  const form = useForm({
+    initialValues: { email: '', password: '', name: '' },
+  });
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const submit = async () => {
+  const submit = form.onSubmit(async (values) => {
     setError('');
     setLoading(true);
     try {
       if (mode === 'login') {
-        await authWithPassword(form.email, form.password);
+        await authWithPassword(values.email, values.password);
       } else {
         await pb.collection('users').create({
-          email: form.email,
-          password: form.password,
-          passwordConfirm: form.password,
-          name: form.name,
+          email: values.email,
+          password: values.password,
+          passwordConfirm: values.password,
+          name: values.name,
         });
-        await authWithPassword(form.email, form.password);
+        await authWithPassword(values.email, values.password);
       }
-      navigate('/board');
-    } catch (e) {
+      navigate(redirect);
+    } catch (e: any) {
       setError(e.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   if (isLoggedIn()) {
-    return <Navigate to="/projects" replace />;
+    return <Navigate to={redirect} replace />;
   }
 
   return (
@@ -98,16 +104,26 @@ export default function Component() {
           </Text>
         </Box>
 
-        <Paper p="xl" radius="lg" shadow="sm" style={{ border: '1px solid #E0E4FF' }}>
+        <Paper p="xl" shadow="sm" style={{ border: '1px solid #E0E4FF' }}>
           <Title order={4} mb="xs" style={{ fontWeight: 600 }}>
-            {mode === 'login' ? 'Welcome back' : 'Create account'}
+            {isInviteFlow
+              ? mode === 'login'
+                ? 'Join project'
+                : 'Create account to join'
+              : mode === 'login'
+                ? 'Welcome back'
+                : 'Create account'}
           </Title>
-          <Text size="sm" c="dimmed" mb="lg">
-            {mode === 'login' ? 'Sign in to your workspace' : 'Join Tasked to get started'}
-          </Text>
 
+          <Text size="sm" c="dimmed" mb="lg">
+            {isInviteFlow
+              ? 'You’ve been invited to collaborate on a project'
+              : mode === 'login'
+                ? 'Sign in to your workspace'
+                : 'Join Tasked to get started'}
+          </Text>
           {error && (
-            <Alert icon={<IconAlertCircle size={16} />} color="red" mb="md" radius="md">
+            <Alert icon={<IconAlertCircle size={16} />} color="red" mb="md">
               {error}
             </Alert>
           )}
@@ -118,8 +134,7 @@ export default function Component() {
                 <TextInput
                   label="Full name"
                   placeholder="Jane Smith"
-                  value={form.name}
-                  onChange={set('name')}
+                  {...form.getInputProps('name')}
                 />
               </>
             )}
@@ -127,14 +142,12 @@ export default function Component() {
               label="Email"
               placeholder="you@university.edu"
               type="email"
-              value={form.email}
-              onChange={set('email')}
+              {...form.getInputProps('email')}
             />
             <PasswordInput
               label="Password"
               placeholder="••••••••"
-              value={form.password}
-              onChange={set('password')}
+              {...form.getInputProps('password')}
             />
             <Button fullWidth mt="xs" loading={loading} onClick={submit} size="md">
               {mode === 'login' ? 'Sign in' : 'Create account'}

@@ -1,5 +1,14 @@
-import { useState } from 'react';
-import { Modal, Stack, TextInput, Textarea, Select, Button, Group } from '@mantine/core';
+import {
+  Modal,
+  Stack,
+  TextInput,
+  Textarea,
+  Select,
+  Button,
+  Group,
+  MultiSelect,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
 import { STATUS_META, TASK_STATUSES, type TaskStatus, type User } from '@/schemas';
 import { useCreateTask } from '@/queries';
 
@@ -13,76 +22,92 @@ interface Props {
 
 export function AddTaskModal({ opened, onClose, projectId, defaultStatus, members }: Props) {
   const createTask = useCreateTask(projectId);
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    status: defaultStatus || 'backlog',
-    assignee: '',
+
+  const form = useForm({
+    initialValues: {
+      title: '',
+      description: '',
+      status: defaultStatus || 'backlog',
+      assignee: [] as string[],
+    },
+
+    validate: {
+      title: (value) => (value.trim().length === 0 ? 'Title is required' : null),
+    },
   });
 
-  const set = (k) => (v) =>
-    setForm((f) => ({ ...f, [k]: typeof v === 'string' ? v : v?.target?.value }));
-
-  const submit = () => {
-    if (!form.title.trim()) return;
+  const submit = form.onSubmit((values) => {
     createTask.mutate(
       {
         project: projectId,
-        title: form.title,
-        description: form.description,
-        status: form.status,
-        assignee: form.assignee,
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        assignee: values.assignee,
       },
       {
         onSuccess: () => {
           onClose();
-          setForm({ title: '', description: '', status: defaultStatus || 'backlog', assignee: '' });
+          form.reset();
+          form.setFieldValue('status', defaultStatus || 'backlog'); // preserve default
         },
       }
     );
-  };
+  });
 
-  const statusData = TASK_STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label }));
-  const memberData = members?.map((m) => ({ value: m.id, label: m.name })) ?? [];
+  const statusData = TASK_STATUSES.map((s) => ({
+    value: s,
+    label: STATUS_META[s].label,
+  }));
+
+  const memberData =
+    members?.map((m) => ({
+      value: m.id,
+      label: m.name!,
+    })) ?? [];
 
   return (
-    <Modal opened={opened} onClose={onClose} title="New Task" radius="lg">
-      <Stack gap="sm">
-        <TextInput
-          label="Task title"
-          placeholder="e.g. Write introduction section"
-          value={form.title}
-          onChange={set('title')}
-          required
-          data-autofocus
-        />
-        <Textarea
-          label="Description"
-          placeholder="Optional details, links, or context..."
-          rows={3}
-          value={form.description}
-          onChange={set('description')}
-        />
-        <Group grow>
-          <Select label="Status" data={statusData} value={form.status} onChange={set('status')} />
-          <Select
-            label="Assignee"
-            data={memberData}
-            value={form.assignee}
-            onChange={set('assignee')}
-            clearable
-            placeholder="Unassigned"
+    <Modal opened={opened} onClose={onClose} title="New Task">
+      <form onSubmit={submit}>
+        <Stack gap="sm">
+          <TextInput
+            label="Task title"
+            placeholder="e.g. Write introduction section"
+            required
+            data-autofocus
+            {...form.getInputProps('title')}
           />
-        </Group>
-        <Group justify="flex-end" mt="xs">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={submit} loading={createTask.isPending} disabled={!form.title.trim()}>
-            Create task
-          </Button>
-        </Group>
-      </Stack>
+
+          <Textarea
+            label="Description"
+            placeholder="Optional details, links, or context..."
+            rows={3}
+            {...form.getInputProps('description')}
+          />
+
+          <Group grow>
+            <Select label="Status" data={statusData} {...form.getInputProps('status')} />
+
+            <MultiSelect
+              label="Assignee"
+              data={memberData}
+              placeholder="Unassigned"
+              clearable
+              {...form.getInputProps('assignee')}
+            />
+          </Group>
+
+          <Group justify="flex-end" mt="xs">
+            <Button variant="subtle" color="gray" onClick={onClose}>
+              Cancel
+            </Button>
+
+            <Button type="submit" loading={createTask.isPending}>
+              Create task
+            </Button>
+          </Group>
+        </Stack>
+      </form>
     </Modal>
   );
 }

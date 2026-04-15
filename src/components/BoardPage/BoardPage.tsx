@@ -1,33 +1,31 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router';
 import {
   Box,
   Group,
   ActionIcon,
-  Button,
   Text,
-  Tooltip,
   Loader,
   Center,
-  Tabs,
   Flex,
+  AppShell,
+  Avatar,
+  Container,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
-import {
-  IconMessageCircle,
-  IconLayoutKanban,
-  IconPlus,
-  IconLogout,
-  IconX,
-} from '@tabler/icons-react';
-import { logoutUser } from '@/lib/pocketbase';
+import { IconLogout, IconX } from '@tabler/icons-react';
+import { currentUser, logoutUser, pb } from '@/lib/pocketbase';
 import { KanbanColumn } from './KanbanColumn';
 import { useProject, useTasks, useUpdateTask } from '@/queries';
 import { TASK_STATUSES, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskModal } from './TaskModal';
 import { AddTaskModal } from './AddTaskModal';
 import { Sidebar } from './Sidebar';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
+
+import classes from './BoardPage.module.css';
 
 interface Props extends React.ComponentPropsWithRef<'div'> {
   projectId: string;
@@ -35,6 +33,8 @@ interface Props extends React.ComponentPropsWithRef<'div'> {
 
 export function BoardPage({ projectId }: Props) {
   const navigate = useNavigate();
+  const user = currentUser();
+  const qc = useQueryClient();
 
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId);
@@ -45,11 +45,25 @@ export function BoardPage({ projectId }: Props) {
   const [addModalOpen, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
   const [defaultStatus, setDefaultStatus] = useState<TaskStatus>('backlog');
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string | null>('board');
 
   const owner = project?.expand.owner;
   const invited = project?.expand?.invited ?? [];
   const allMembers = owner ? [owner, ...invited] : invited;
+
+  useEffect(() => {
+    pb.collection('tasks').subscribe('*', () => {
+      qc.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    });
+
+    pb.collection('projects').subscribe('*', () => {
+      qc.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+    });
+
+    return () => {
+      pb.collection('tasks').unsubscribe();
+      pb.collection('projects').unsubscribe();
+    };
+  }, []);
 
   const tasksByStatus = tasks.reduce(
     (acc, t) => {
@@ -99,78 +113,77 @@ export function BoardPage({ projectId }: Props) {
     );
   }
 
+  if (!allMembers?.some((member) => member.id === user!.id)) {
+    return <Navigate to="/projects" replace />;
+  }
+
   return (
-    <Box
-      style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--col-bg)' }}
-    >
+    <AppShell padding="md" navbar={{ width: 280, breakpoint: 'sm' }} header={{ height: 60 }}>
+      {/* Header */}
+      <AppShell.Header className={classes.header} p="md">
+        <Group gap="sm">
+          <Box
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: '#6366F1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+              <rect x="1" y="1" width="6" height="16" rx="2" fill="white" fillOpacity="0.9" />
+              <rect x="9" y="1" width="4" height="11" rx="2" fill="white" fillOpacity="0.7" />
+              <rect x="15" y="1" width="2" height="7" rx="1" fill="white" fillOpacity="0.5" />
+            </svg>
+          </Box>
+          <Text fw={700} size="lg" style={{ color: '#4F46E5', letterSpacing: '-0.02em' }}>
+            Tasked
+          </Text>
+        </Group>
+        <Group>
+          <Group gap={8}>
+            <Avatar size="sm" color="indigo" radius="xl">
+              {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+            </Avatar>
+            <Text size="sm" fw={500}>
+              {user?.name || user?.username}
+            </Text>
+          </Group>
+          <ActionIcon variant="subtle" color="gray" onClick={logout} title="Sign out">
+            <IconLogout size={18} />
+          </ActionIcon>
+        </Group>
+      </AppShell.Header>
+
       {/* Sidebar */}
-      <Sidebar projectId={projectId} />
+      <AppShell.Navbar>
+        <Sidebar projectId={projectId} />
+      </AppShell.Navbar>
 
       {/* Main content */}
-      <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Topbar */}
-        <Box className="topbar">
-          <Group gap={8} style={{ flex: 1 }}>
-            <Tabs value={activeTab} onChange={setActiveTab} variant="pills" radius="md">
-              <Tabs.List>
-                <Tabs.Tab
-                  value="board"
-                  leftSection={<IconLayoutKanban size={14} />}
-                  style={{ fontSize: 13 }}
-                >
-                  Board
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
-          </Group>
+      <AppShell.Main>
+        <Container size="xl">
+          {/* Board + Chat */}
 
-          <Group gap={8}>
-            <Button
-              size="xs"
-              leftSection={<IconPlus size={13} />}
-              radius="md"
-              onClick={() => openAdd('backlog')}
-            >
-              Add task
-            </Button>
-            <Tooltip label={chatOpen ? 'Close chat' : 'Team chat'} withArrow>
-              <ActionIcon
-                variant={chatOpen ? 'filled' : 'light'}
-                color="indigo"
-                size="md"
-                radius="md"
-                onClick={() => setChatOpen((v) => !v)}
-              >
-                <IconMessageCircle size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <ActionIcon variant="subtle" color="gray" size="md" onClick={logout} title="Sign out">
-              <IconLogout size={16} />
-            </ActionIcon>
-          </Group>
-        </Box>
-
-        {/* Board + Chat */}
-        <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Kanban board */}
-          <Box style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-            <DragDropProvider onDragEnd={handleDragEnd}>
-              <Flex gap="sm">
-                {TASK_STATUSES.map((status) => {
-                  const tasks = tasksByStatus[status];
-                  return (
-                    <KanbanColumn
-                      key={status}
-                      status={status}
-                      tasks={tasks}
-                      onAddTask={openAdd}
-                      onTaskClick={openTask}
-                    />
-                  );
-                })}
-              </Flex>
-            </DragDropProvider>
-          </Box>
+          <DragDropProvider onDragEnd={handleDragEnd}>
+            <Flex gap="sm">
+              {TASK_STATUSES.map((status) => {
+                const tasks = tasksByStatus[status];
+                return (
+                  <KanbanColumn
+                    key={status}
+                    status={status}
+                    tasks={tasks}
+                    onAddTask={openAdd}
+                    onTaskClick={openTask}
+                  />
+                );
+              })}
+            </Flex>
+          </DragDropProvider>
 
           {/* Chat panel */}
           {chatOpen && (
@@ -211,8 +224,8 @@ export function BoardPage({ projectId }: Props) {
               </Box>
             </Box>
           )}
-        </Box>
-      </Box>
+        </Container>
+      </AppShell.Main>
 
       {/* Modals */}
       {selectedTask && (
@@ -231,6 +244,6 @@ export function BoardPage({ projectId }: Props) {
         defaultStatus={defaultStatus}
         members={allMembers}
       />
-    </Box>
+    </AppShell>
   );
 }

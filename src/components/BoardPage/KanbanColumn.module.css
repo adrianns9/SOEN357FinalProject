@@ -1,0 +1,8 @@
+.root {
+  flex: 1;
+  border-top: 8px solid var(--status-color) !important;
+
+  &[data-is-drop-target] {
+    border: 2px solid var(--status-color);
+  }
+}

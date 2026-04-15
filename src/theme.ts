@@ -20,10 +20,10 @@ export const theme = createTheme({
     ],
   },
   components: {
-    Button: { defaultProps: { radius: 'md' } },
-    TextInput: { defaultProps: { radius: 'md' } },
-    PasswordInput: { defaultProps: { radius: 'md' } },
-    Card: { defaultProps: { radius: 'lg' } },
-    Modal: { defaultProps: { radius: 'lg' } },
+    // Button: { defaultProps: { radius: 'md' } },
+    // TextInput: { defaultProps: { radius: 'md' } },
+    // PasswordInput: { defaultProps: { radius: 'md' } },
+    // Card: { defaultProps: { radius: 'lg' } },
+    // Modal: { defaultProps: { radius: 'lg' } },
   },
 });

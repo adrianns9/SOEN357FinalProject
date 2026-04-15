@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: .
+    container_name: tasked-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: tasked-pocketbase
+    ports:
+      - "8090:8090"
+    volumes:
+      - pb_data:/pb_data
+    restart: unless-stopped
+
+volumes:
+  pb_data:

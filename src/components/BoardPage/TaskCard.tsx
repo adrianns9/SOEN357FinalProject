@@ -1,5 +1,5 @@
-import { Box, Text, Avatar, Group, Tooltip, Card } from '@mantine/core';
-import type { TaskExpanded } from '@/schemas';
+import { Text, Avatar, Group, Tooltip, Card } from '@mantine/core';
+import { type TaskExpanded } from '@/schemas';
 
 import classes from './TaskCard.module.css';
 import { useDraggable } from '@dnd-kit/react';
@@ -29,17 +29,12 @@ export function TaskCard({ task, onClick }: Props) {
       <Text fw={500} size="sm" lineClamp={2} mb={6} style={{ lineHeight: 1.4 }}>
         {task.title}
       </Text>
-      {task.description && (
-        <Text size="xs" c="dimmed" lineClamp={2} mb={6} style={{ lineHeight: 1.5 }}>
-          {task.description}
-        </Text>
-      )}
-      <Group justify="flex-end" mt={4}>
+      <Group justify="flex-end" mt={4} gap="xs">
         {assignees.map((assignee) => {
           return (
             <Tooltip key={assignee.id} label={assignee.name} withArrow>
               <Avatar size={22} radius="xl" color="indigo" style={{ cursor: 'default' }}>
-                {assignee.name?.charAt(0)?.toUpperCase()}
+                {assignee.name?.slice(0, 2)?.toUpperCase()}
               </Avatar>
             </Tooltip>
           );

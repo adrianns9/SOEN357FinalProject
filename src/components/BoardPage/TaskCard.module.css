@@ -1,4 +1,6 @@
 .root {
+  cursor: pointer;
+
   &[data-dragging] {
     opacity: 0.4;
   }

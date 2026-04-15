@@ -1,9 +1,11 @@
-import { Box, Text, Group, ActionIcon, Badge, Card, Flex, Stack } from '@mantine/core';
+import { Box, Text, Group, ActionIcon, Badge, Card, Stack } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { STATUS_META, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskCard } from './TaskCard';
 import { useDroppable } from '@dnd-kit/react';
 import { CollisionPriority } from '@dnd-kit/abstract';
+
+import classes from './KanbanColumn.module.css';
 
 interface Props {
   status: TaskStatus;
@@ -25,8 +27,11 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
     <Card
       ref={ref}
       withBorder
-      className="kanban-col"
-      style={{ flex: 1, outline: isDropTarget ? `2px solid ${meta.color}` : undefined }}
+      className={classes.root}
+      mih="70vh"
+      miw={200}
+      mod={{ isDropTarget }}
+      style={{ '--status-color': meta.color }}
     >
       <Stack>
         <Group justify="space-between" className="kanban-col-header">

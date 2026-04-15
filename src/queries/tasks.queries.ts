@@ -16,7 +16,7 @@ export const useTasks = (projectId: string) => {
 export const useTask = (projectId: string, taskId: string) => {
   return useQuery({
     queryKey: queryKeys.task(projectId, taskId),
-    queryFn: () => tasksApi.getOne(taskId),
+    queryFn: () => tasksApi.getOne(taskId, { expand: 'assignee' }),
   });
 };
 

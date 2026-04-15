@@ -41,7 +41,7 @@ export const CreateTaskSchema = z.object({
   description: z.string().optional(),
   project: z.string(),
   status: TaskStatusSchema,
-  assignee: z.string().optional(),
+  assignee: z.array(z.string()).optional(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial();

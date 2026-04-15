@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Box,
@@ -27,10 +27,12 @@ import {
   IconUsers,
   IconLayoutKanban,
 } from '@tabler/icons-react';
-import { currentUser, logoutUser } from '@/lib/pocketbase';
+import { currentUser, logoutUser, pb } from '@/lib/pocketbase';
 import { useDisclosure } from '@mantine/hooks';
 import type { Project } from '@/schemas';
 import { useCreateProject, useDeleteProject, useProjects } from '@/queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Props {
   project: Project;
@@ -49,7 +51,6 @@ function ProjectCard({ project, onClick }: Props) {
     <Card
       shadow="xs"
       padding="lg"
-      radius="lg"
       style={{
         cursor: 'pointer',
         border: '1px solid #E5E7EB',
@@ -70,7 +71,6 @@ function ProjectCard({ project, onClick }: Props) {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 10,
             background: 'linear-gradient(135deg, #818CF8, #6366F1)',
             display: 'flex',
             alignItems: 'center',
@@ -134,6 +134,8 @@ function ProjectCard({ project, onClick }: Props) {
 export function ProjectsPage() {
   const navigate = useNavigate();
   const user = currentUser();
+
+  const qc = useQueryClient();
   const { data: projects, isLoading } = useProjects();
   const [opened, { open, close }] = useDisclosure(false);
   const [form, setForm] = useState({ title: '', description: '' });
@@ -144,6 +146,16 @@ export function ProjectsPage() {
     logoutUser();
     navigate('/auth');
   };
+
+  useEffect(() => {
+    pb.collection('projects').subscribe('*', () => {
+      qc.invalidateQueries({ queryKey: queryKeys.projects });
+    });
+
+    return () => {
+      pb.collection('projects').unsubscribe();
+    };
+  }, []);
 
   return (
     <Box style={{ minHeight: '100vh', background: 'var(--col-bg)' }}>
@@ -186,7 +198,7 @@ export function ProjectsPage() {
         </Group>
         <Group>
           <Group gap={8}>
-            <Avatar size="sm" color="indigo" radius="xl">
+            <Avatar size="sm" color="indigo">
               {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
             </Avatar>
             <Text size="sm" fw={500}>
@@ -209,7 +221,7 @@ export function ProjectsPage() {
               Manage your team's work in one place
             </Text>
           </Box>
-          <Button leftSection={<IconPlus size={16} />} onClick={open} radius="md">
+          <Button leftSection={<IconPlus size={16} />} onClick={open}>
             New project
           </Button>
         </Group>
@@ -217,12 +229,11 @@ export function ProjectsPage() {
         {isLoading ? (
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} height={180} radius="lg" />
+              <Skeleton key={i} height={180} />
             ))}
           </SimpleGrid>
         ) : projects?.length === 0 ? (
           <Paper
-            radius="lg"
             p="xl"
             style={{ textAlign: 'center', border: '2px dashed #E0E4FF', background: 'transparent' }}
           >
@@ -246,7 +257,7 @@ export function ProjectsPage() {
         )}
       </Box>
 
-      <Modal opened={opened} onClose={close} title="New Project" radius="lg">
+      <Modal opened={opened} onClose={close} title="New Project">
         <Stack gap="sm">
           <TextInput
             label="Project name"

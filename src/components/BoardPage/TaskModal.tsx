@@ -14,9 +14,14 @@ import {
   Divider,
   ScrollArea,
   Badge,
+  Tooltip,
+  LoadingOverlay,
+  Card,
+  MultiSelect,
 } from '@mantine/core';
+import { schemaResolver, useForm } from '@mantine/form';
 import { IconTrash, IconSend, IconPencil, IconCheck, IconX } from '@tabler/icons-react';
-import { currentUser } from '../../lib/pocketbase';
+import { currentUser, pb } from '@/lib/pocketbase';
 import {
   useCreateTaskMessage,
   useDeleteTask,
@@ -25,9 +30,42 @@ import {
   useUpdateTask,
 } from '@/queries';
 import { STATUS_META, TASK_STATUSES, UpdateTaskSchema, type User } from '@/schemas';
+import z from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
+
+function CommentSimple({
+  name,
+  time,
+  content,
+}: {
+  name: string | undefined;
+  time: string | undefined;
+  content: string | undefined;
+}) {
+  return (
+    <Card withBorder>
+      <Group>
+        <Avatar radius="xl" color="indigo">
+          {name?.slice(0, 2)?.toUpperCase()}
+        </Avatar>
+        <div>
+          <Text size="sm">{name}</Text>
+          <Text size="xs" c="dimmed">
+            {time}
+          </Text>
+        </div>
+      </Group>
+      <Text pl={54} pt="sm" size="sm">
+        {content}
+      </Text>
+    </Card>
+  );
+}
 
 function TaskChat({ taskId }: { taskId: string }) {
   const user = currentUser();
+  const qc = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
 
@@ -36,6 +74,16 @@ function TaskChat({ taskId }: { taskId: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    pb.collection('task_messages').subscribe('*', () => {
+      qc.invalidateQueries({ queryKey: queryKeys.taskMessages });
+    });
+
+    return () => {
+      pb.collection('task_messages').unsubscribe();
+    };
+  }, []);
 
   const send = useCreateTaskMessage();
 
@@ -64,7 +112,7 @@ function TaskChat({ taskId }: { taskId: string }) {
       >
         Task Discussion
       </Text>
-      <ScrollArea h={220} mb="sm">
+      <ScrollArea h={500} mb="sm">
         <Stack gap={8} pr={4}>
           {messages?.length === 0 && (
             <Text size="xs" c="dimmed" ta="center" py="lg">
@@ -72,29 +120,13 @@ function TaskChat({ taskId }: { taskId: string }) {
             </Text>
           )}
           {messages?.map((m) => {
-            const isMine = m.author === user!.id;
-            const author = m.expand.author;
             return (
-              <Group
+              <CommentSimple
                 key={m.id}
-                align="flex-start"
-                gap={6}
-                justify={isMine ? 'flex-end' : 'flex-start'}
-              >
-                {!isMine && (
-                  <Avatar size={24} radius="xl" color="indigo">
-                    {author.name?.charAt(0)?.toUpperCase()}
-                  </Avatar>
-                )}
-                <Box style={{ maxWidth: '75%' }}>
-                  {!isMine && (
-                    <Text size="xs" c="dimmed" mb={2}>
-                      {author.name}
-                    </Text>
-                  )}
-                  <Box className={`msg-bubble ${isMine ? 'mine' : 'theirs'}`}>{m.content}</Box>
-                </Box>
-              </Group>
+                name={m.expand.author.name}
+                content={m.content}
+                time={m.updated}
+              />
             );
           })}
           <div ref={bottomRef} />
@@ -133,30 +165,48 @@ interface Props extends React.ComponentPropsWithRef<'div'> {
 }
 
 export function TaskModal({ projectId, taskId, opened, onClose, members }: Props) {
-  const { data: task } = useTask(projectId, taskId);
-  const user = currentUser();
+  const { data: task, isLoading } = useTask(projectId, taskId);
   const updateTask = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', status: '', assignee: '' });
+
+  const form = useForm<z.infer<typeof UpdateTaskSchema>>({
+    mode: 'uncontrolled',
+    initialValues: {
+      title: task?.title || '',
+      description: task?.description || '',
+      status: task?.status || 'backlog',
+      assignee: task?.expand?.assignee?.map((m) => m.name!) || [],
+    },
+    validate: schemaResolver(UpdateTaskSchema, { sync: true }),
+  });
 
   useEffect(() => {
     if (task)
-      setForm({
+      form.setValues({
         title: task.title || '',
         description: task.description || '',
         status: task.status || 'backlog',
-        assignee: task.assignee || '',
+        assignee: task.assignee || [],
       });
   }, [task]);
 
   if (!task) return null;
 
-  const save = () => {
-    const data = UpdateTaskSchema.parse(form);
-    updateTask.mutate({ id: task.id, data });
-    setEditing(false);
-  };
+  const handleSubmit = form.onSubmit((values) => {
+    const data = {
+      ...values,
+      assignee: values.assignee?.map((a) => members.find((m) => m.id === a)!.id!) || [],
+    };
+    updateTask.mutate(
+      { id: task.id, data },
+      {
+        onSuccess: () => {
+          setEditing(false);
+        },
+      }
+    );
+  });
 
   const del = () => {
     deleteTask.mutate({ id: task.id });
@@ -164,14 +214,14 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
   };
 
   const statusData = TASK_STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label }));
-  const memberData = members?.map((m) => ({ value: m.id, label: m.name })) ?? [];
+  const memberData = members?.map((m) => m.name!) ?? [];
+  const assignees = task.expand.assignee;
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       size="lg"
-      radius="lg"
       title={
         <Group gap="xs">
           <Badge
@@ -192,57 +242,42 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
         </Group>
       }
     >
+      <LoadingOverlay visible={isLoading} />
       <Stack gap="md">
         {editing ? (
-          <>
-            <TextInput
-              label="Title"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              required
-            />
-            <Textarea
-              label="Description"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              rows={3}
-            />
-            <Group grow>
-              <Select
-                label="Status"
-                data={statusData}
-                value={form.status}
-                onChange={(v) => setForm((f) => ({ ...f, status: v }))}
-              />
-              <Select
-                label="Assignee"
-                data={memberData}
-                value={form.assignee}
-                onChange={(v) => setForm((f) => ({ ...f, assignee: v }))}
-                clearable
-                placeholder="Unassigned"
-              />
-            </Group>
-            <Group justify="flex-end">
-              <Button
-                variant="subtle"
-                color="gray"
-                size="sm"
-                onClick={() => setEditing(false)}
-                leftSection={<IconX size={14} />}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={save}
-                loading={updateTask.isPending}
-                leftSection={<IconCheck size={14} />}
-              >
-                Save
-              </Button>
-            </Group>
-          </>
+          <form onSubmit={handleSubmit}>
+            <Stack>
+              <TextInput label="Title" {...form.getInputProps('title')} />
+              <Textarea label="Description" {...form.getInputProps('description')} />
+              <Group grow>
+                <Select label="Status" data={statusData} {...form.getInputProps('status')} />
+                <MultiSelect
+                  label="Assignee"
+                  data={memberData}
+                  {...form.getInputProps('assignee')}
+                />
+              </Group>
+              <Group justify="flex-end">
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  onClick={() => setEditing(false)}
+                  leftSection={<IconX size={14} />}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  loading={updateTask.isPending}
+                  leftSection={<IconCheck size={14} />}
+                >
+                  Save
+                </Button>
+              </Group>
+            </Stack>
+          </form>
         ) : (
           <>
             <Group justify="space-between" align="flex-start">
@@ -283,19 +318,23 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
                   {STATUS_META[task.status]?.label}
                 </Badge>
               </Box>
-              {task.expand?.assignee && (
-                <Box>
-                  <Text size="xs" c="dimmed" mb={4}>
-                    Assignee
-                  </Text>
-                  <Group gap={6}>
-                    <Avatar size={20} radius="xl" color="indigo">
-                      {task.expand.assignee.name?.charAt(0)?.toUpperCase()}
-                    </Avatar>
-                    <Text size="sm">{task.expand.assignee.name}</Text>
-                  </Group>
-                </Box>
-              )}
+
+              <Box>
+                <Text size="xs" c="dimmed" mb={4}>
+                  Assignee(s)
+                </Text>
+                <Group justify="flex-end" mt={4}>
+                  {assignees.map((assignee) => {
+                    return (
+                      <Tooltip key={assignee.id} label={assignee.name} withArrow>
+                        <Avatar size={22} radius="xl" color="indigo" style={{ cursor: 'default' }}>
+                          {assignee.name?.slice(0, 2)?.toUpperCase()}
+                        </Avatar>
+                      </Tooltip>
+                    );
+                  })}
+                </Group>
+              </Box>
             </Group>
           </>
         )}

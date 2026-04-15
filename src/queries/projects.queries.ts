@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { projectsApi } from '@/api';
 import { UpdateProjectSchema } from '@/schemas';
 import type z from 'zod';
+import { pb } from '@/lib/pocketbase';
 
 // GET all projects
 export const useProjects = () => {
@@ -47,6 +48,20 @@ export const useUpdateProject = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: z.infer<typeof UpdateProjectSchema> }) =>
       projectsApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+  });
+};
+
+export const useAddMember = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, memberId }: { id: string; memberId: string }) =>
+      pb.collection('projects').update(id, {
+        'invited+': memberId,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.projects });
     },
