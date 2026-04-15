@@ -1,8 +1,13 @@
-import { Box, Text, Badge, Avatar, Group, Tooltip } from '@mantine/core';
+import { Box, Text, Avatar, Group, Tooltip } from '@mantine/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { Task } from '@/schemas';
 
-export function TaskCard({ task, onClick }) {
+interface Props extends React.ComponentPropsWithoutRef<'div'> {
+  task: Task;
+}
+
+export function TaskCard({ task, onClick }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -34,9 +39,9 @@ export function TaskCard({ task, onClick }) {
       )}
       <Group justify="flex-end" mt={4}>
         {assignee && (
-          <Tooltip label={assignee.name || assignee.username} withArrow>
+          <Tooltip label={assignee.name} withArrow>
             <Avatar size={22} radius="xl" color="indigo" style={{ cursor: 'default' }}>
-              {(assignee.name || assignee.username)?.charAt(0)?.toUpperCase()}
+              {assignee.name?.charAt(0)?.toUpperCase()}
             </Avatar>
           </Tooltip>
         )}

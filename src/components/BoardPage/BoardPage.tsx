@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Box, Group, ActionIcon, Button, Text, Tooltip, Loader, Center, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -9,6 +9,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import {
   IconMessageCircle,
@@ -17,81 +19,88 @@ import {
   IconLogout,
   IconX,
 } from '@tabler/icons-react';
-import { pb, currentUser } from '@/lib/pocketbase';
+import { logoutUser } from '@/lib/pocketbase';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
+import { useProject, useTasks, useUpdateTask } from '@/queries';
+import { TASK_STATUSES, type Task, type TaskStatus } from '@/schemas';
 import { TaskModal } from './TaskModal';
 import { AddTaskModal } from './AddTaskModal';
 import { DirectMessages } from './DirectMessages';
-import { TASK_STATUSES, useProject, useTasks, useUpdateTask } from '@/queries';
 
-export function BoardPage() {
-  const { projectId } = useParams();
+interface Props extends React.ComponentPropsWithRef<'div'> {
+  projectId: string;
+}
+
+export function BoardPage({ projectId }: Props) {
   const navigate = useNavigate();
-  const user = currentUser();
 
   const { data: project, isLoading: projectLoading } = useProject(projectId);
-  const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
-  const updateTask = useUpdateTask(projectId);
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId);
+  const updateTask = useUpdateTask();
 
-  const [activeTask, setActiveTask] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [taskModalOpen, { open: openTaskModal, close: closeTaskModal }] = useDisclosure(false);
   const [addModalOpen, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
   const [defaultStatus, setDefaultStatus] = useState('backlog');
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('board');
+  const [activeTab, setActiveTab] = useState<string | null>('board');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const owner = project?.expand?.owner;
+  const owner = project?.expand.owner;
   const invited = project?.expand?.invited ?? [];
   const allMembers = owner ? [owner, ...invited] : invited;
 
-  const tasksByStatus = TASK_STATUSES.reduce((acc, s) => {
-    acc[s] = tasks?.filter((t) => t.status === s) ?? [];
-    return acc;
-  }, {});
+  const tasksByStatus = tasks.reduce(
+    (acc, t) => {
+      acc[t.status].push(t);
+      return acc;
+    },
+    TASK_STATUSES.reduce((acc, s) => ({ ...acc, [s]: [] }), {}) as Record<TaskStatus, Task[]>
+  );
 
-  const handleDragStart = ({ active }) => {
-    setActiveTask(tasks?.find((t) => t.id === active.id) ?? null);
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveTask(tasks.find((t) => t.id === active.id) ?? null);
   };
 
-  const handleDragEnd = ({ active, over }) => {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveTask(null);
     if (!over) return;
 
-    const taskId = active.id;
-    const task = tasks?.find((t) => t.id === taskId);
+    const taskId = active.id as string;
+    const statusBoard = over.id as TaskStatus;
+    const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     // Dropped on a column
-    if (TASK_STATUSES.includes(over.id)) {
+    if (TASK_STATUSES.includes(over.id as TaskStatus)) {
       if (task.status !== over.id) {
-        updateTask.mutate({ id: taskId, status: over.id });
+        updateTask.mutate({ id: taskId as string, data: { status: statusBoard } });
       }
       return;
     }
 
     // Dropped on another task — find its column
-    const overTask = tasks?.find((t) => t.id === over.id);
+    const overTask = tasks.find((t) => t.id === over.id);
     if (overTask && overTask.status !== task.status) {
-      updateTask.mutate({ id: taskId, status: overTask.status });
+      updateTask.mutate({ id: taskId, data: { status: overTask.status } });
     }
   };
 
-  const openAdd = (status) => {
+  const openAdd = (status: TaskStatus) => {
     setDefaultStatus(status);
     openAddModal();
   };
 
-  const openTask = (task) => {
-    setSelectedTask(task);
+  const openTask = (task: Task) => {
+    setSelectedTask(task.id);
     openTaskModal();
   };
 
   const logout = () => {
-    pb.authStore.clear();
+    logoutUser();
     navigate('/auth');
   };
 
@@ -116,7 +125,7 @@ export function BoardPage() {
         <Box className="topbar">
           <Group gap={8} style={{ flex: 1 }}>
             <Tabs value={activeTab} onChange={setActiveTab} variant="pills" radius="md">
-              <Tabs.List gap={4}>
+              <Tabs.List>
                 <Tabs.Tab
                   value="board"
                   leftSection={<IconLayoutKanban size={14} />}
@@ -172,15 +181,18 @@ export function BoardPage() {
                   alignItems: 'flex-start',
                 }}
               >
-                {TASK_STATUSES.map((status) => (
-                  <KanbanColumn
-                    key={status}
-                    status={status}
-                    tasks={tasksByStatus[status]}
-                    onAddTask={openAdd}
-                    onTaskClick={openTask}
-                  />
-                ))}
+                {TASK_STATUSES.map((status) => {
+                  const tasks = tasksByStatus[status];
+                  return (
+                    <KanbanColumn
+                      key={status}
+                      status={status}
+                      tasks={tasks}
+                      onAddTask={openAdd}
+                      onTaskClick={openTask}
+                    />
+                  );
+                })}
               </Box>
 
               <DragOverlay>
@@ -228,7 +240,7 @@ export function BoardPage() {
                 </ActionIcon>
               </Box>
               <Box style={{ flex: 1, overflow: 'hidden' }}>
-                <DirectMessages members={allMembers} />
+                {/* <DirectMessages members={allMembers} /> */}
               </Box>
             </Box>
           )}

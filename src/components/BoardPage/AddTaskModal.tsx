@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Stack, TextInput, Textarea, Select, Button, Group } from '@mantine/core';
-import { TASK_STATUSES, useCreateTask } from '@/queries';
+import { useCreateTask } from '@/queries';
+import { STATUS_META, TASK_STATUSES } from '@/schemas';
 
 export function AddTaskModal({ opened, onClose, projectId, defaultStatus, members }) {
   const createTask = useCreateTask(projectId);

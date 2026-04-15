@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Title,
@@ -20,41 +19,29 @@ import {
   Skeleton,
   Paper,
 } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import {
   IconPlus,
   IconDots,
   IconTrash,
-  IconEdit,
   IconLogout,
   IconUsers,
   IconLayoutKanban,
-  IconCheck,
 } from '@tabler/icons-react';
-import { pb, currentUser } from '../lib/pocketbase';
+import { currentUser, logoutUser } from '@/lib/pocketbase';
 import { useDisclosure } from '@mantine/hooks';
+import type { Project } from '@/schemas';
+import { useCreateProject, useDeleteProject, useProjects } from '@/queries';
 
-function useProjects() {
-  return useQuery({
-    queryKey: ['projects'],
-    queryFn: () =>
-      pb.collection('projects').getFullList({
-        sort: '-created',
-        expand: 'owner,invited',
-      }),
-  });
+interface Props {
+  project: Project;
+  onClick: React.MouseEventHandler<HTMLDivElement>;
 }
 
-function ProjectCard({ project, onClick }) {
-  const qc = useQueryClient();
+function ProjectCard({ project, onClick }: Props) {
   const user = currentUser();
   const isOwner = project.owner === user?.id;
 
-  const del = useMutation({
-    mutationFn: () => pb.collection('projects').delete(project.id),
-    onSuccess: () => qc.invalidateQueries(['projects']),
-    onError: (e) => notifications.show({ color: 'red', title: 'Error', message: e.message }),
-  });
+  const del = useDeleteProject(project.id);
 
   const memberCount = (project.invited?.length ?? 0) + 1;
 
@@ -144,33 +131,18 @@ function ProjectCard({ project, onClick }) {
   );
 }
 
-export default function ProjectsPage() {
+export function ProjectsPage() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const user = currentUser();
   const { data: projects, isLoading } = useProjects();
   const [opened, { open, close }] = useDisclosure(false);
   const [form, setForm] = useState({ title: '', description: '' });
 
-  const create = useMutation({
-    mutationFn: () =>
-      pb.collection('projects').create({
-        title: form.title,
-        description: form.description,
-        owner: user.id,
-        invited: [],
-      }),
-    onSuccess: (rec) => {
-      qc.invalidateQueries(['projects']);
-      close();
-      setForm({ title: '', description: '' });
-      navigate(`/projects/${rec.id}`);
-    },
-    onError: (e) => notifications.show({ color: 'red', title: 'Error', message: e.message }),
-  });
+  const create = useCreateProject();
+  console.log(projects);
 
   const logout = () => {
-    pb.authStore.clear();
+    logoutUser();
     navigate('/auth');
   };
 
@@ -296,7 +268,7 @@ export default function ProjectsPage() {
               Cancel
             </Button>
             <Button
-              onClick={() => create.mutate()}
+              onClick={() => create.mutate({ ...form, owner: user!.id }, { onSuccess: close })}
               loading={create.isPending}
               disabled={!form.title.trim()}
             >

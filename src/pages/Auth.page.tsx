@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
 import {
   TextInput,
   PasswordInput,
@@ -8,21 +8,19 @@ import {
   Title,
   Paper,
   Stack,
-  Group,
   Anchor,
   Box,
   Alert,
 } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { pb } from '@/lib/pocketbase';
+import { authWithPassword, isLoggedIn, pb } from '@/lib/pocketbase';
 
-export default function AuthPage() {
+export default function Component() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ email: '', password: '', username: '', name: '' });
+  const [form, setForm] = useState({ email: '', password: '', name: '' });
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -31,24 +29,27 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await pb.collection('users').authWithPassword(form.email, form.password);
+        await authWithPassword(form.email, form.password);
       } else {
         await pb.collection('users').create({
           email: form.email,
           password: form.password,
           passwordConfirm: form.password,
-          username: form.username,
           name: form.name,
         });
-        await pb.collection('users').authWithPassword(form.email, form.password);
+        await authWithPassword(form.email, form.password);
       }
-      navigate('/');
+      navigate('/board');
     } catch (e) {
       setError(e.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (isLoggedIn()) {
+    return <Navigate to="/projects" replace />;
+  }
 
   return (
     <Box
@@ -119,12 +120,6 @@ export default function AuthPage() {
                   placeholder="Jane Smith"
                   value={form.name}
                   onChange={set('name')}
-                />
-                <TextInput
-                  label="Username"
-                  placeholder="janesmith"
-                  value={form.username}
-                  onChange={set('username')}
                 />
               </>
             )}

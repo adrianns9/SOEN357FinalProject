@@ -19,7 +19,8 @@ import { IconTrash, IconSend, IconPencil, IconCheck, IconX } from '@tabler/icons
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pb, currentUser } from '../../lib/pocketbase';
 import { notifications } from '@mantine/notifications';
-import { STATUS_META, TASK_STATUSES, useDeleteTask, useUpdateTask } from '@/queries';
+import { useDeleteTask, useUpdateTask } from '@/queries';
+import { STATUS_META, TASK_STATUSES, type Task, type User } from '@/schemas';
 
 function TaskChat({ taskId }) {
   const user = currentUser();
@@ -133,10 +134,18 @@ function TaskChat({ taskId }) {
   );
 }
 
-export function TaskModal({ task, opened, onClose, projectId, members }) {
+interface Props extends React.ComponentPropsWithRef<'div'> {
+  task: Task;
+  opened: boolean;
+  onClose: () => void;
+  projectId: string;
+  members: User[];
+}
+
+export function TaskModal({ task, opened, onClose, members }: Props) {
   const user = currentUser();
-  const updateTask = useUpdateTask(projectId);
-  const deleteTask = useDeleteTask(projectId);
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', status: '', assignee: '' });
 
@@ -158,12 +167,12 @@ export function TaskModal({ task, opened, onClose, projectId, members }) {
   };
 
   const del = () => {
-    deleteTask.mutate(task.id);
+    deleteTask.mutate({ id: task.id });
     onClose();
   };
 
   const statusData = TASK_STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label }));
-  const memberData = members?.map((m) => ({ value: m.id, label: m.name || m.username })) ?? [];
+  const memberData = members?.map((m) => ({ value: m.id, label: m.name })) ?? [];
 
   return (
     <Modal
@@ -282,7 +291,7 @@ export function TaskModal({ task, opened, onClose, projectId, members }) {
                   {STATUS_META[task.status]?.label}
                 </Badge>
               </Box>
-              {task.expand?.assignee && (
+              {/* {task.expand?.assignee && (
                 <Box>
                   <Text size="xs" c="dimmed" mb={4}>
                     Assignee
@@ -298,7 +307,7 @@ export function TaskModal({ task, opened, onClose, projectId, members }) {
                     </Text>
                   </Group>
                 </Box>
-              )}
+              )} */}
             </Group>
           </>
         )}

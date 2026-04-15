@@ -1,5 +1,7 @@
 import { BoardPage } from '@/components';
+import { useParams } from 'react-router-dom';
 
 export default function Component() {
-  return <BoardPage />;
+  const { projectId } = useParams();
+  return projectId && <BoardPage projectId={projectId} />;
 }

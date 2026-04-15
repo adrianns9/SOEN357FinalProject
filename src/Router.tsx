@@ -1,20 +1,39 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { HomePage } from './pages/Home.page';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import AuthPage from './pages/Auth.page';
-import { BoardPage } from './components';
+import BoardPage from './pages/Board.page';
+import ProjectsPage from './pages/Projects.page';
+import { isLoggedIn } from '@/lib/pocketbase';
+
+export function ProtectedRoute() {
+  if (!isLoggedIn()) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <Outlet />;
+}
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <Navigate to="/auth" replace />,
   },
   {
-    path: '/login',
+    path: 'auth',
     element: <AuthPage />,
   },
   {
-    path: '/board',
-    element: <BoardPage />,
+    path: '/',
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: 'projects',
+        element: <ProjectsPage />,
+      },
+      {
+        path: 'projects/:projectId',
+        element: <BoardPage />,
+      },
+    ],
   },
 ]);
 
