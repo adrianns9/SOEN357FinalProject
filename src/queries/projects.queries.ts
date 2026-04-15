@@ -2,6 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { projectsApi } from '@/api';
+import { UpdateProjectSchema } from '@/schemas';
+import type z from 'zod';
 
 // GET all projects
 export const useProjects = () => {
@@ -33,6 +35,18 @@ export const useCreateProject = () => {
 
   return useMutation({
     mutationFn: projectsApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+  });
+};
+
+export const useUpdateProject = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: z.infer<typeof UpdateProjectSchema> }) =>
+      projectsApi.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.projects });
     },

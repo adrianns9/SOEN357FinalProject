@@ -1,9 +1,13 @@
-import { CreateTaskMessageSchema, TaskMessageSchema, UpdateTaskMessageSchema } from '@/schemas';
+import {
+  CreateTaskMessageSchema,
+  TaskMessageExpandedSchema,
+  UpdateTaskMessageSchema,
+} from '@/schemas';
 import { createCrudApi } from './crudFactory';
 
 const crudApi = createCrudApi({
   collection: 'task_messages',
-  outputSchema: TaskMessageSchema,
+  outputSchema: TaskMessageExpandedSchema,
   createSchema: CreateTaskMessageSchema,
   updateSchema: UpdateTaskMessageSchema,
 });

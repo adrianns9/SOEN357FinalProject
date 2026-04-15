@@ -1,10 +1,10 @@
 import { Box, Text, Avatar, Group, Tooltip } from '@mantine/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Task } from '@/schemas';
+import type { TaskExpanded } from '@/schemas';
 
 interface Props extends React.ComponentPropsWithoutRef<'div'> {
-  task: Task;
+  task: TaskExpanded;
 }
 
 export function TaskCard({ task, onClick }: Props) {
@@ -18,7 +18,7 @@ export function TaskCard({ task, onClick }: Props) {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const assignee = task.expand?.assignee;
+  const assignee = task.expand.assignee;
 
   return (
     <Box

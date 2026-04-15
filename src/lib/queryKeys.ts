@@ -8,8 +8,8 @@ export const queryKeys = {
   projects: ['projects'] as const,
   project: (id: string) => ['projects', id] as const,
 
-  tasks: ['tasks'] as const,
-  task: (id: string) => ['tasks', id] as const,
+  tasks: (projectId: string) => ['tasks', projectId] as const,
+  task: (projectId: string, id: string) => ['tasks', projectId, id] as const,
 
   taskMessages: ['task_messages'] as const,
 };

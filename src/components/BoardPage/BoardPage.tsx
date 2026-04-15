@@ -23,10 +23,10 @@ import { logoutUser } from '@/lib/pocketbase';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { useProject, useTasks, useUpdateTask } from '@/queries';
-import { TASK_STATUSES, type Task, type TaskStatus } from '@/schemas';
+import { TASK_STATUSES, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskModal } from './TaskModal';
 import { AddTaskModal } from './AddTaskModal';
-import { DirectMessages } from './DirectMessages';
+import { Sidebar } from './Sidebar';
 
 interface Props extends React.ComponentPropsWithRef<'div'> {
   projectId: string;
@@ -37,13 +37,13 @@ export function BoardPage({ projectId }: Props) {
 
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId);
-  const updateTask = useUpdateTask();
+  const updateTask = useUpdateTask(projectId);
 
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [activeTask, setActiveTask] = useState<TaskExpanded | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskExpanded | null>(null);
   const [taskModalOpen, { open: openTaskModal, close: closeTaskModal }] = useDisclosure(false);
   const [addModalOpen, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
-  const [defaultStatus, setDefaultStatus] = useState('backlog');
+  const [defaultStatus, setDefaultStatus] = useState<TaskStatus>('backlog');
   const [chatOpen, setChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('board');
 
@@ -58,7 +58,10 @@ export function BoardPage({ projectId }: Props) {
       acc[t.status].push(t);
       return acc;
     },
-    TASK_STATUSES.reduce((acc, s) => ({ ...acc, [s]: [] }), {}) as Record<TaskStatus, Task[]>
+    TASK_STATUSES.reduce((acc, s) => ({ ...acc, [s]: [] }), {}) as Record<
+      TaskStatus,
+      TaskExpanded[]
+    >
   );
 
   const handleDragStart = ({ active }: DragStartEvent) => {
@@ -94,8 +97,8 @@ export function BoardPage({ projectId }: Props) {
     openAddModal();
   };
 
-  const openTask = (task: Task) => {
-    setSelectedTask(task.id);
+  const openTask = (task: TaskExpanded) => {
+    setSelectedTask(task);
     openTaskModal();
   };
 
@@ -117,7 +120,7 @@ export function BoardPage({ projectId }: Props) {
       style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--col-bg)' }}
     >
       {/* Sidebar */}
-      {/* <Sidebar project={project} /> */}
+      <Sidebar projectId={projectId} />
 
       {/* Main content */}
       <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -248,13 +251,15 @@ export function BoardPage({ projectId }: Props) {
       </Box>
 
       {/* Modals */}
-      <TaskModal
-        task={selectedTask}
-        opened={taskModalOpen}
-        onClose={closeTaskModal}
-        projectId={projectId}
-        members={allMembers}
-      />
+      {selectedTask && (
+        <TaskModal
+          taskId={selectedTask.id}
+          opened={taskModalOpen}
+          onClose={closeTaskModal}
+          projectId={projectId}
+          members={allMembers}
+        />
+      )}
       <AddTaskModal
         opened={addModalOpen}
         onClose={closeAddModal}

@@ -24,17 +24,16 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { currentUser } from '@/lib/pocketbase';
-import { useSearchUser, useUpdateProject } from '../../hooks/useProject';
+import { useProject, useSearchUser, useUpdateProject } from '@/queries';
 
-export default function Sidebar({ project }) {
+export function Sidebar({ projectId }: { projectId: string }) {
   const navigate = useNavigate();
   const user = currentUser();
-  const qc = useQueryClient();
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure(false);
   const [username, setUsername] = useState('');
-  const updateProject = useUpdateProject(project?.id);
+  const { data: project } = useProject(projectId);
+  const updateProject = useUpdateProject();
   const searchUser = useSearchUser();
 
   const isOwner = project?.owner === user?.id;
@@ -47,7 +46,7 @@ export default function Sidebar({ project }) {
     if (!username.trim()) return;
     try {
       const found = await searchUser.mutateAsync(username.trim());
-      if (found.id === user.id) {
+      if (found.id === user!.id) {
         notifications.show({ color: 'orange', message: "You're already in this project." });
         return;
       }
@@ -56,15 +55,21 @@ export default function Sidebar({ project }) {
         notifications.show({ color: 'orange', message: 'This user is already invited.' });
         return;
       }
-      await updateProject.mutateAsync({ invited: [...currentInvited, found.id] });
+      await updateProject.mutateAsync({
+        id: projectId,
+        data: { invited: [...currentInvited, found.id] },
+      });
       notifications.show({ color: 'green', message: `${found.name || found.username} added!` });
       setUsername('');
     } catch {}
   };
 
-  const removeMember = async (memberId) => {
+  const removeMember = async (memberId: string) => {
     const currentInvited = project?.invited ?? [];
-    await updateProject.mutateAsync({ invited: currentInvited.filter((id) => id !== memberId) });
+    await updateProject.mutateAsync({
+      id: projectId,
+      data: { invited: currentInvited.filter((id) => id !== memberId) },
+    });
     notifications.show({ color: 'green', message: 'Member removed.' });
   };
 
@@ -147,7 +152,7 @@ export default function Sidebar({ project }) {
                     </Text>
                   </Box>
                 </Group>
-                {isOwner && m.id !== user.id && m.id !== project?.owner && (
+                {isOwner && m.id !== user!.id && m.id !== project?.owner && (
                   <ActionIcon
                     size="xs"
                     variant="subtle"

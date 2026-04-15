@@ -1,9 +1,9 @@
-import { CreateTaskSchema, TaskSchema, UpdateTaskSchema } from '@/schemas';
+import { CreateTaskSchema, TaskExpandedSchema, UpdateTaskSchema } from '@/schemas';
 import { createCrudApi } from './crudFactory';
 
 const crudApi = createCrudApi({
   collection: 'tasks',
-  outputSchema: TaskSchema,
+  outputSchema: TaskExpandedSchema,
   createSchema: CreateTaskSchema,
   updateSchema: UpdateTaskSchema,
 });
@@ -14,5 +14,6 @@ export const tasksApi = {
     crudApi.getList({
       filter: `project="${projectId}"`,
       sort: '-created',
+      expand: 'owner,assignee',
     }),
 };

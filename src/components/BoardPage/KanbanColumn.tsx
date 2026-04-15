@@ -2,14 +2,14 @@ import { Box, Text, Group, ActionIcon, Badge } from '@mantine/core';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { IconPlus } from '@tabler/icons-react';
-import { STATUS_META, type Task, type TaskStatus } from '@/schemas';
+import { STATUS_META, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskCard } from './TaskCard';
 
 interface Props extends React.ComponentPropsWithRef<'div'> {
   status: TaskStatus;
-  tasks: Task[];
+  tasks: TaskExpanded[];
   onAddTask: (status: TaskStatus) => void;
-  onTaskClick: (task: Task) => void;
+  onTaskClick: (task: TaskExpanded) => void;
 }
 
 export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {

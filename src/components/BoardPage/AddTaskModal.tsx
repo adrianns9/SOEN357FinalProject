@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Modal, Stack, TextInput, Textarea, Select, Button, Group } from '@mantine/core';
+import { STATUS_META, TASK_STATUSES, type TaskStatus, type User } from '@/schemas';
 import { useCreateTask } from '@/queries';
-import { STATUS_META, TASK_STATUSES } from '@/schemas';
 
-export function AddTaskModal({ opened, onClose, projectId, defaultStatus, members }) {
+interface Props {
+  opened: boolean;
+  onClose: () => void;
+  projectId: string;
+  defaultStatus: TaskStatus;
+  members: User[];
+}
+
+export function AddTaskModal({ opened, onClose, projectId, defaultStatus, members }: Props) {
   const createTask = useCreateTask(projectId);
   const [form, setForm] = useState({
     title: '',
@@ -19,10 +27,11 @@ export function AddTaskModal({ opened, onClose, projectId, defaultStatus, member
     if (!form.title.trim()) return;
     createTask.mutate(
       {
+        project: projectId,
         title: form.title,
         description: form.description,
         status: form.status,
-        assignee: form.assignee || null,
+        assignee: form.assignee,
       },
       {
         onSuccess: () => {
@@ -34,7 +43,7 @@ export function AddTaskModal({ opened, onClose, projectId, defaultStatus, member
   };
 
   const statusData = TASK_STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label }));
-  const memberData = members?.map((m) => ({ value: m.id, label: m.name || m.username })) ?? [];
+  const memberData = members?.map((m) => ({ value: m.id, label: m.name })) ?? [];
 
   return (
     <Modal opened={opened} onClose={onClose} title="New Task" radius="lg">

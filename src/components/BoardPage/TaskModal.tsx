@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, type KeyboardEventHandler } from 'react';
 import {
   Modal,
   Stack,
@@ -16,51 +16,40 @@ import {
   Badge,
 } from '@mantine/core';
 import { IconTrash, IconSend, IconPencil, IconCheck, IconX } from '@tabler/icons-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { pb, currentUser } from '../../lib/pocketbase';
-import { notifications } from '@mantine/notifications';
-import { useDeleteTask, useUpdateTask } from '@/queries';
-import { STATUS_META, TASK_STATUSES, type Task, type User } from '@/schemas';
+import { currentUser } from '../../lib/pocketbase';
+import {
+  useCreateTaskMessage,
+  useDeleteTask,
+  useTask,
+  useTaskMessages,
+  useUpdateTask,
+} from '@/queries';
+import { STATUS_META, TASK_STATUSES, UpdateTaskSchema, type User } from '@/schemas';
 
-function TaskChat({ taskId }) {
+function TaskChat({ taskId }: { taskId: string }) {
   const user = currentUser();
-  const qc = useQueryClient();
-  const bottomRef = useRef(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
 
-  const { data: messages } = useQuery({
-    queryKey: ['task-messages', taskId],
-    queryFn: () =>
-      pb.collection('task_messages').getFullList({
-        filter: `task_id = "${taskId}"`,
-        sort: 'created',
-        expand: 'author',
-      }),
-    refetchInterval: 3000,
-  });
+  const { data: messages } = useTaskMessages(taskId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const send = useMutation({
-    mutationFn: () =>
-      pb.collection('task_messages').create({
-        task_id: taskId,
-        author: user.id,
-        content: msg.trim(),
-      }),
-    onSuccess: () => {
-      setMsg('');
-      qc.invalidateQueries(['task-messages', taskId]);
-    },
-    onError: (e) => notifications.show({ color: 'red', message: e.message }),
-  });
+  const send = useCreateTaskMessage();
 
-  const onKey = (e) => {
+  const sendMessage = () => {
+    if (msg.trim()) {
+      setMsg('');
+      send.mutate({ author: user!.id, content: msg, task: taskId });
+    }
+  };
+
+  const onKey: KeyboardEventHandler = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (msg.trim()) send.mutate();
+      sendMessage();
     }
   };
 
@@ -83,8 +72,8 @@ function TaskChat({ taskId }) {
             </Text>
           )}
           {messages?.map((m) => {
-            const isMine = m.author === user.id;
-            const author = m.expand?.author;
+            const isMine = m.author === user!.id;
+            const author = m.expand.author;
             return (
               <Group
                 key={m.id}
@@ -94,13 +83,13 @@ function TaskChat({ taskId }) {
               >
                 {!isMine && (
                   <Avatar size={24} radius="xl" color="indigo">
-                    {(author?.name || author?.username)?.charAt(0)?.toUpperCase()}
+                    {author.name?.charAt(0)?.toUpperCase()}
                   </Avatar>
                 )}
                 <Box style={{ maxWidth: '75%' }}>
                   {!isMine && (
                     <Text size="xs" c="dimmed" mb={2}>
-                      {author?.name || author?.username}
+                      {author.name}
                     </Text>
                   )}
                   <Box className={`msg-bubble ${isMine ? 'mine' : 'theirs'}`}>{m.content}</Box>
@@ -121,10 +110,11 @@ function TaskChat({ taskId }) {
           onKeyDown={onKey}
         />
         <ActionIcon
+          disabled={!msg}
           size="lg"
           variant="filled"
           color="indigo"
-          onClick={() => msg.trim() && send.mutate()}
+          onClick={() => sendMessage()}
           loading={send.isPending}
         >
           <IconSend size={16} />
@@ -135,17 +125,18 @@ function TaskChat({ taskId }) {
 }
 
 interface Props extends React.ComponentPropsWithRef<'div'> {
-  task: Task;
+  taskId: string;
   opened: boolean;
   onClose: () => void;
   projectId: string;
   members: User[];
 }
 
-export function TaskModal({ task, opened, onClose, members }: Props) {
+export function TaskModal({ projectId, taskId, opened, onClose, members }: Props) {
+  const { data: task } = useTask(projectId, taskId);
   const user = currentUser();
-  const updateTask = useUpdateTask();
-  const deleteTask = useDeleteTask();
+  const updateTask = useUpdateTask(projectId);
+  const deleteTask = useDeleteTask(projectId);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', status: '', assignee: '' });
 
@@ -162,7 +153,8 @@ export function TaskModal({ task, opened, onClose, members }: Props) {
   if (!task) return null;
 
   const save = () => {
-    updateTask.mutate({ id: task.id, ...form, assignee: form.assignee || null });
+    const data = UpdateTaskSchema.parse(form);
+    updateTask.mutate({ id: task.id, data });
     setEditing(false);
   };
 
@@ -291,23 +283,19 @@ export function TaskModal({ task, opened, onClose, members }: Props) {
                   {STATUS_META[task.status]?.label}
                 </Badge>
               </Box>
-              {/* {task.expand?.assignee && (
+              {task.expand?.assignee && (
                 <Box>
                   <Text size="xs" c="dimmed" mb={4}>
                     Assignee
                   </Text>
                   <Group gap={6}>
                     <Avatar size={20} radius="xl" color="indigo">
-                      {(task.expand.assignee.name || task.expand.assignee.username)
-                        ?.charAt(0)
-                        ?.toUpperCase()}
+                      {task.expand.assignee.name?.charAt(0)?.toUpperCase()}
                     </Avatar>
-                    <Text size="sm">
-                      {task.expand.assignee.name || task.expand.assignee.username}
-                    </Text>
+                    <Text size="sm">{task.expand.assignee.name}</Text>
                   </Group>
                 </Box>
-              )} */}
+              )}
             </Group>
           </>
         )}

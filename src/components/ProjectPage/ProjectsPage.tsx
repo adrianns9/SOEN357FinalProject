@@ -139,7 +139,6 @@ export function ProjectsPage() {
   const [form, setForm] = useState({ title: '', description: '' });
 
   const create = useCreateProject();
-  console.log(projects);
 
   const logout = () => {
     logoutUser();
