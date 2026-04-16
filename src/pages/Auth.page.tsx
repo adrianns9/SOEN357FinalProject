@@ -30,7 +30,7 @@ export default function Component() {
     initialValues: { email: '', password: '', name: '' },
   });
 
-  const submit = form.onSubmit(async (values) => {
+  const handleSubmit = form.onSubmit(async (values) => {
     setError('');
     setLoading(true);
     try {
@@ -129,29 +129,31 @@ export default function Component() {
           )}
 
           <Stack gap="sm">
-            {mode === 'register' && (
-              <>
-                <TextInput
-                  label="Full name"
-                  placeholder="Jane Smith"
-                  {...form.getInputProps('name')}
-                />
-              </>
-            )}
-            <TextInput
-              label="Email"
-              placeholder="you@university.edu"
-              type="email"
-              {...form.getInputProps('email')}
-            />
-            <PasswordInput
-              label="Password"
-              placeholder="••••••••"
-              {...form.getInputProps('password')}
-            />
-            <Button fullWidth mt="xs" loading={loading} onClick={submit} size="md">
-              {mode === 'login' ? 'Sign in' : 'Create account'}
-            </Button>
+            <form onSubmit={handleSubmit}>
+              {mode === 'register' && (
+                <>
+                  <TextInput
+                    label="Full name"
+                    placeholder="Jane Smith"
+                    {...form.getInputProps('name')}
+                  />
+                </>
+              )}
+              <TextInput
+                label="Email"
+                placeholder="you@university.edu"
+                type="email"
+                {...form.getInputProps('email')}
+              />
+              <PasswordInput
+                label="Password"
+                placeholder="••••••••"
+                {...form.getInputProps('password')}
+              />
+              <Button type="submit" fullWidth mt="xs" loading={loading} size="md">
+                {mode === 'login' ? 'Sign in' : 'Create account'}
+              </Button>
+            </form>
           </Stack>
 
           <Text size="sm" c="dimmed" mt="lg" ta="center">
