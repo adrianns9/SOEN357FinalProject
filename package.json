@@ -18,7 +18,8 @@
     "test": "npm run typecheck && npm run format:test && npm run lint && npm run vitest && npm run build",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
-    "start:database": "docker run -d --name pocketbase -p 8090:8090 -v $(pwd)/pb_data:/pb_data -e PB_ADMIN_EMAIL=admin@example.com -e PB_ADMIN_PASSWORD=password ghcr.io/muchobien/pocketbase:latest"
+    "start:prod": "docker compose up -d",
+    "start:database": "docker run --name pocketbase -p 8090:8090 -v $(pwd)/pb_data:/pb_data -e PB_ADMIN_EMAIL=admin@example.com -e PB_ADMIN_PASSWORD=password ghcr.io/muchobien/pocketbase:latest"
   },
   "dependencies": {
     "@dnd-kit/abstract": "^0.4.0",

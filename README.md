@@ -41,24 +41,36 @@ Our hypothesis: a unified, purpose-built tool will help students complete projec
 
 - [Node.js](https://nodejs.org/) (v18+)
 - [Yarn](https://yarnpkg.com/) (v4)
-- [Docker](https://www.docker.com/) (for the database)
+- [Docker](https://www.docker.com/)
 
 ---
 
-### 1. Clone the repository
+### A. Starting Production Server
+
+```bash
+yarn start:prod
+```
+
+The app will be available at **http://localhost:3000**.
+
+---
+
+### B. Starting Development Server
+
+#### 1. Clone the repository
 
 ```bash
 git clone <repository-url>
 cd <project-folder>
 ```
 
-### 2. Install dependencies
+#### 2. Install dependencies
 
 ```bash
 yarn install
 ```
 
-### 3. Start the database
+#### 3. Start the database
 
 Run PocketBase locally using Docker:
 
@@ -77,7 +89,7 @@ This starts a PocketBase instance at **http://localhost:8090** with the followin
 
 ---
 
-### 4. Import the database schema
+#### 4. Import the database schema
 
 1. Open the PocketBase Admin UI at **http://localhost:8090/_/**
 2. Log in using the credentials above
@@ -89,7 +101,7 @@ This will create all required collections (projects, tasks, users, messages, etc
 
 ---
 
-### 5. Start the development server
+#### 5. Start the development server
 
 ```bash
 yarn dev
@@ -118,18 +130,6 @@ The app will be available at **http://localhost:5173**.
 | `yarn lint` | Run oxlint and stylelint |
 | `yarn format:test` | Check formatting with oxfmt |
 | `yarn format:write` | Auto-format all files |
-| `yarn vitest` | Run unit tests |
-| `yarn vitest:watch` | Run tests in watch mode |
-| `yarn test` | Run all checks: typecheck, format, lint, vitest, build |
-
-### Storybook
-
-| Script | Description |
-|---|---|
-| `yarn storybook` | Start Storybook dev server on port 6006 |
-| `yarn storybook:build` | Build Storybook as a static bundle |
-
----
 
 ## Project Structure
 
