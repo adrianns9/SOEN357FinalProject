@@ -1,12 +1,12 @@
-# Tasked — Student Team Collaboration Platform
+# Tasked - Student Team Collaboration Platform
 
 ## Motivation
 
-Teamwork is a cornerstone of university education, yet students consistently struggle with the same recurring problems: lack of coordination, poor communication, unclear accountability, and fragmented task management. Teams are scattered across messaging apps, shared documents, and calendar tools — each doing one thing well, but none of them talking to each other.
+Teamwork is a cornerstone of university education, yet students consistently struggle with the same recurring problems: lack of coordination, poor communication, unclear accountability, and fragmented task management. Teams are scattered across messaging apps, shared documents, and calendar tools - each doing one thing well, but none of them talking to each other.
 
 Professional tools like Jira are powerful but intimidating and often paywalled. Trello is visual but lacks communication. Notion is flexible but offers no structured workflow for newcomers. Students end up context-switching constantly between platforms, a habit that research has shown reduces productivity and increases cognitive load.
 
-**Tasked** is a lightweight, student-centered collaboration platform that brings task assignment, progress tracking, and team communication into a single cohesive interface. Designed specifically for undergraduate and graduate students working in teams of 2–6 on short-term academic projects, it removes the overhead of professional tooling while keeping the features that matter: a Kanban board, task-level discussions, and direct messaging — all in one place.
+**Tasked** is a lightweight, student-centered collaboration platform that brings task assignment, progress tracking, and team communication into a single cohesive interface. Designed specifically for undergraduate and graduate students working in teams of 2–6 on short-term academic projects, it removes the overhead of professional tooling while keeping the features that matter: a Kanban board, task-level discussions, and direct messaging - all in one place.
 
 Our hypothesis: a unified, purpose-built tool will help students complete project tasks more efficiently and report better coordination than teams relying on a patchwork of separate applications.
 
@@ -14,11 +14,11 @@ Our hypothesis: a unified, purpose-built tool will help students complete projec
 
 ## Features
 
-- **Kanban Board** — Visualize tasks across columns; drag and drop to update status
-- **Task Management** — Create, assign, and track tasks with per-task chat threads
-- **Direct Messaging** — Communicate with teammates without leaving the app
-- **Project Workspaces** — Invite members and manage multiple projects
-- **Real-time Backend** — Powered by [PocketBase](https://pocketbase.io/)
+- **Kanban Board** - Visualize tasks across columns; drag and drop to update status
+- **Task Management** - Create, assign, and track tasks with per-task chat threads
+- **Direct Messaging** - Communicate with teammates without leaving the app
+- **Project Workspaces** - Invite members and manage multiple projects
+- **Real-time Backend** - Powered by [PocketBase](https://pocketbase.io/)
 
 ---
 
