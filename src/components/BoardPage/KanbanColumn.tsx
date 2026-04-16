@@ -1,4 +1,5 @@
-import { Box, Text, Group, ActionIcon, Badge, Card, Stack } from '@mantine/core';
+import React from 'react';
+import { Box, Text, Group, Badge, Card, Stack, Button } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { STATUS_META, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskCard } from './TaskCard';
@@ -21,7 +22,10 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
     accept: 'item',
     collisionPriority: CollisionPriority.Low,
   });
+
   const meta = STATUS_META[status];
+  const isBacklog = status === 'backlog';
+  const showEmptyBacklog = isBacklog && tasks.length === 0;
 
   return (
     <Card
@@ -29,15 +33,15 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
       withBorder
       className={classes.root}
       mih="70vh"
-      miw={200}
+      miw={260}
       mod={{ isDropTarget }}
-      style={{ '--status-color': meta.color }}
+      style={{ '--status-color': meta.color } as React.CSSProperties}
     >
-      <Stack>
-        <Group justify="space-between" className="kanban-col-header">
+      <Stack h="100%" gap="sm">
+        <Group justify="space-between" className={classes.header}>
           <Group gap={6}>
-            <Box style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color }} />
-            <Text inherit>{meta.label}</Text>
+            <Box className={classes.dot} style={{ background: meta.color }} />
+            <Text fw={500}>{meta.label}</Text>
             <Badge
               size="xs"
               variant="filled"
@@ -48,15 +52,36 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
               {tasks.length}
             </Badge>
           </Group>
-          <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => onAddTask(status)}>
-            <IconPlus size={14} />
-          </ActionIcon>
         </Group>
 
-        <Stack gap="sm">
-          {tasks.map((task, index) => (
-            <TaskCard key={task.id} index={index} task={task} onClick={() => onTaskClick(task)} />
-          ))}
+        
+        <Stack gap="sm" style={{ flex: 1 }}>
+          {showEmptyBacklog ? (
+            <Card
+              withBorder
+              padding="lg"
+              radius="md"
+              className={classes.emptyAddCard}
+              onClick={() => onAddTask(status)}
+            >
+              <Stack gap={6} align="center" justify="center" h="100%">
+                <IconPlus size={28} />
+                <Text fw={600}>Add your first task</Text>
+                <Text size="sm" c="dimmed" ta="center">
+                  Create a task in backlog to start planning your work
+                </Text>
+              </Stack>
+            </Card>
+          ) : (
+            tasks.map((task, index) => (
+              <TaskCard
+                key={task.id}
+                index={index}
+                task={task}
+                onClick={() => onTaskClick(task)}
+              />
+            ))
+          )}
         </Stack>
       </Stack>
     </Card>

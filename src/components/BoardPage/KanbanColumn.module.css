@@ -1,8 +1,36 @@
 .root {
-  flex: 1;
-  border-top: 8px solid var(--status-color) !important;
+  display: flex;
+  flex-direction: column;
+}
 
-  &[data-is-drop-target] {
-    border: 2px solid var(--status-color);
-  }
+.header {
+  min-height: 28px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.addTaskButton {
+  border: 1px dashed #cbd5e1;
+}
+
+.emptyAddCard {
+  flex: 1;
+  display: flex;
+  cursor: pointer;
+  border: 1.5px dashed #cbd5e1;
+  background: #f8fafc;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.emptyAddCard:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
 }
