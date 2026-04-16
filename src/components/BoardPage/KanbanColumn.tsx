@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, Group, Badge, Card, Stack, Button } from '@mantine/core';
+import { Box, Text, Group, Badge, Card, Stack } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { STATUS_META, type TaskExpanded, type TaskStatus } from '@/schemas';
 import { TaskCard } from './TaskCard';
@@ -54,7 +54,6 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
           </Group>
         </Group>
 
-        
         <Stack gap="sm" style={{ flex: 1 }}>
           {showEmptyBacklog ? (
             <Card
@@ -74,12 +73,7 @@ export function KanbanColumn({ status, tasks, onAddTask, onTaskClick }: Props) {
             </Card>
           ) : (
             tasks.map((task, index) => (
-              <TaskCard
-                key={task.id}
-                index={index}
-                task={task}
-                onClick={() => onTaskClick(task)}
-              />
+              <TaskCard key={task.id} index={index} task={task} onClick={() => onTaskClick(task)} />
             ))
           )}
         </Stack>

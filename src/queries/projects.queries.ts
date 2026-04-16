@@ -4,14 +4,17 @@ import { queryKeys } from '@/lib/queryKeys';
 import { projectsApi } from '@/api';
 import { UpdateProjectSchema } from '@/schemas';
 import type z from 'zod';
-import { pb } from '@/lib/pocketbase';
+import { currentUser, pb } from '@/lib/pocketbase';
 
 // GET all projects
 export const useProjects = () => {
+  const user = currentUser();
+
   return useQuery({
     queryKey: queryKeys.projects,
     queryFn: () =>
       projectsApi.getList({
+        filter: `owner = '${user!.id}' || invited ?= '${user!.id}'`,
         expand: 'owner,invited',
       }),
   });

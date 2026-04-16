@@ -13,8 +13,7 @@ import {
   Container,
   Title,
   UnstyledButton,
-  Button
-  
+  Button,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
@@ -199,35 +198,35 @@ export function BoardPage({ projectId }: Props) {
       {/* Main content */}
       <AppShell.Main>
         <Container size="xl">
-          <Group justify="space-between" align="flex-start" mt="sm">
-  <Box style={{ flex: 1 }}>
-    <Title order={2} fw={600} style={{ lineHeight: 1.2 }}>
-      {project?.title}
-    </Title>
+          <Group className={classes.boardHeader} justify="space-between" align="flex-start" mt="sm">
+            <Box style={{ flex: 1 }}>
+              <Title order={2} fw={600} style={{ lineHeight: 1.2 }}>
+                {project?.title}
+              </Title>
 
-    {project?.description && (
-      <Text size="sm" c="dimmed" mt={6} style={{ maxWidth: 640, lineHeight: 1.5 }}>
-        {project?.description}
-      </Text>
-    )}
+              {project?.description && (
+                <Text size="sm" c="dimmed" mt={6} style={{ maxWidth: 640, lineHeight: 1.5 }}>
+                  {project?.description}
+                </Text>
+              )}
 
-    <Box mt="md" maw={420}>
-      <Group justify="space-between" mb={6}>
-        <Text size="sm" fw={500}>
-          Overall completion
-        </Text>
-        <Text size="sm" fw={600}>
-          {overallProgress}%
-        </Text>
-      </Group>
-      <Progress value={overallProgress} radius="xl" size="md" />
-    </Box>
-  </Box>
+              <Box mt="md" maw={420}>
+                <Group justify="space-between" mb={6}>
+                  <Text size="sm" fw={500}>
+                    Overall completion
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {overallProgress}%
+                  </Text>
+                </Group>
+                <Progress value={overallProgress} radius="xl" size="md" />
+              </Box>
+            </Box>
 
-  <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd('backlog')} radius="md">
-    New Task
-  </Button>
-</Group>
+            <Button leftSection={<IconPlus size={16} />} onClick={() => openAdd('backlog')}>
+              New Task
+            </Button>
+          </Group>
           {/* Board + Chat */}
 
           <DragDropProvider onDragEnd={handleDragEnd}>

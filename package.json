@@ -19,7 +19,7 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "start:prod": "docker compose up -d",
-    "start:database": "docker run --name pocketbase -p 8090:8090 -v $(pwd)/pb_data:/pb_data -e PB_ADMIN_EMAIL=admin@example.com -e PB_ADMIN_PASSWORD=password ghcr.io/muchobien/pocketbase:latest"
+    "start:database": "docker run --name pocketbase -p 8091:8090 -v $(pwd)/pb_data:/pb_data -e PB_ADMIN_EMAIL=admin@example.com -e PB_ADMIN_PASSWORD=password ghcr.io/muchobien/pocketbase:latest"
   },
   "dependencies": {
     "@dnd-kit/abstract": "^0.4.0",
