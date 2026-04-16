@@ -11,6 +11,8 @@ import {
   AppShell,
   Avatar,
   Container,
+  Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
@@ -18,7 +20,7 @@ import { IconLogout, IconX } from '@tabler/icons-react';
 import { currentUser, logoutUser, pb } from '@/lib/pocketbase';
 import { KanbanColumn } from './KanbanColumn';
 import { useProject, useTasks, useUpdateTask } from '@/queries';
-import { TASK_STATUSES, type TaskExpanded, type TaskStatus } from '@/schemas';
+import { TASK_STATUSES, type TaskExpanded, type TaskStatus, type User } from '@/schemas';
 import { TaskModal } from './TaskModal';
 import { AddTaskModal } from './AddTaskModal';
 import { Sidebar } from './Sidebar';
@@ -26,6 +28,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 
 import classes from './BoardPage.module.css';
+import { ChatThread } from './ChatThread';
 
 interface Props extends React.ComponentPropsWithRef<'div'> {
   projectId: string;
@@ -40,6 +43,7 @@ export function BoardPage({ projectId }: Props) {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId);
   const updateTask = useUpdateTask(projectId);
 
+  const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskExpanded | null>(null);
   const [taskModalOpen, { open: openTaskModal, close: closeTaskModal }] = useDisclosure(false);
   const [addModalOpen, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
@@ -64,6 +68,12 @@ export function BoardPage({ projectId }: Props) {
       pb.collection('projects').unsubscribe();
     };
   }, []);
+
+  React.useEffect(() => {
+    if (selectedMember && allMembers.every((m) => selectedMember.id !== m.id)) {
+      setSelectedMember(null);
+    }
+  }, [selectedMember, allMembers]);
 
   const tasksByStatus = tasks.reduce(
     (acc, t) => {
@@ -118,31 +128,33 @@ export function BoardPage({ projectId }: Props) {
   }
 
   return (
-    <AppShell padding="md" navbar={{ width: 280, breakpoint: 'sm' }} header={{ height: 60 }}>
+    <AppShell padding="md" navbar={{ width: 600, breakpoint: 'sm' }} header={{ height: 60 }}>
       {/* Header */}
       <AppShell.Header className={classes.header} p="md">
-        <Group gap="sm">
-          <Box
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: '#6366F1',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-              <rect x="1" y="1" width="6" height="16" rx="2" fill="white" fillOpacity="0.9" />
-              <rect x="9" y="1" width="4" height="11" rx="2" fill="white" fillOpacity="0.7" />
-              <rect x="15" y="1" width="2" height="7" rx="1" fill="white" fillOpacity="0.5" />
-            </svg>
-          </Box>
-          <Text fw={700} size="lg" style={{ color: '#4F46E5', letterSpacing: '-0.02em' }}>
-            Tasked
-          </Text>
-        </Group>
+        <UnstyledButton onClick={() => navigate('/projects')}>
+          <Group gap="sm">
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: '#6366F1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+                <rect x="1" y="1" width="6" height="16" rx="2" fill="white" fillOpacity="0.9" />
+                <rect x="9" y="1" width="4" height="11" rx="2" fill="white" fillOpacity="0.7" />
+                <rect x="15" y="1" width="2" height="7" rx="1" fill="white" fillOpacity="0.5" />
+              </svg>
+            </Box>
+            <Text fw={700} size="lg" style={{ color: '#4F46E5', letterSpacing: '-0.02em' }}>
+              Tasked
+            </Text>
+          </Group>
+        </UnstyledButton>
         <Group>
           <Group gap={8}>
             <Avatar size="sm" color="indigo" radius="xl">
@@ -160,16 +172,43 @@ export function BoardPage({ projectId }: Props) {
 
       {/* Sidebar */}
       <AppShell.Navbar>
-        <Sidebar projectId={projectId} />
+        <Sidebar
+          projectId={projectId}
+          selectedMemberId={selectedMember?.id}
+          onSelectMember={setSelectedMember}
+        />
+
+        <Box style={{ flex: 1 }}>
+          {selectedMember ? (
+            <ChatThread peer={selectedMember} onClose={() => setSelectedMember(null)} />
+          ) : (
+            <Center>
+              <Text p="xl" c="dimmed">
+                Select a member to start chatting
+              </Text>
+            </Center>
+          )}
+        </Box>
       </AppShell.Navbar>
 
       {/* Main content */}
       <AppShell.Main>
         <Container size="xl">
+          <Box style={{ flex: 1 }}>
+            <Title order={2} fw={600} style={{ lineHeight: 1.2 }}>
+              {project?.title}
+            </Title>
+
+            {project?.description && (
+              <Text size="sm" c="dimmed" mt={6} style={{ maxWidth: 640, lineHeight: 1.5 }}>
+                {project?.description}
+              </Text>
+            )}
+          </Box>
           {/* Board + Chat */}
 
           <DragDropProvider onDragEnd={handleDragEnd}>
-            <Flex gap="sm">
+            <Flex gap="sm" mt="sm">
               {TASK_STATUSES.map((status) => {
                 const tasks = tasksByStatus[status];
                 return (

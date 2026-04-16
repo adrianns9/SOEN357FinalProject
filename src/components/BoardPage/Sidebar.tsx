@@ -14,7 +14,15 @@ import { IconCheck, IconLink, IconX } from '@tabler/icons-react';
 import { currentUser } from '@/lib/pocketbase';
 import { useProject, useUpdateProject } from '@/queries';
 
-export function Sidebar({ projectId }: { projectId: string }) {
+export function Sidebar({
+  projectId,
+  selectedMemberId,
+  onSelectMember,
+}: {
+  projectId: string;
+  selectedMemberId?: string;
+  onSelectMember?: (member: any) => void;
+}) {
   const user = currentUser();
   const { data: project } = useProject(projectId);
   const updateProject = useUpdateProject();
@@ -23,6 +31,10 @@ export function Sidebar({ projectId }: { projectId: string }) {
   const owner = project?.expand?.owner;
   const invited = project?.expand?.invited ?? [];
   const allMembers = owner ? [owner, ...invited] : invited;
+
+  // Split for UX
+  const selfMember = allMembers.find((m) => m.id === user?.id);
+  const otherMembers = allMembers.filter((m) => m.id !== user?.id);
   const inviteLink = `${window.location.origin}/invite/${project?.id}`;
 
   const removeMember = async (memberId: string) => {
@@ -38,51 +50,102 @@ export function Sidebar({ projectId }: { projectId: string }) {
     <Box className="sidebar">
       {/* Members */}
       <Box style={{ padding: '14px 16px', flex: 1 }}>
-        <Group justify="space-between" mb="sm">
-          <Text
-            size="xs"
-            fw={600}
-            c="dimmed"
-            style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
-          >
-            Members
-          </Text>
-          {/* {isOwner && (
-            <ActionIcon size="xs" variant="subtle" color="indigo" onClick={openInvite}>
-              <IconUserPlus size={13} />
-            </ActionIcon>
-          )} */}
-        </Group>
+        {selfMember && (
+          <Box mb="sm">
+            <Text
+              size="xs"
+              fw={600}
+              c="dimmed"
+              mb={6}
+              style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+            >
+              You
+            </Text>
+
+            <Group
+              gap={8}
+              style={{
+                padding: '6px',
+                borderRadius: 8,
+                background: '#F8F9FA',
+                cursor: 'not-allowed',
+                opacity: 0.85,
+              }}
+            >
+              <Avatar size={28} radius="xl" color="indigo">
+                {selfMember.name?.slice(0, 2)?.toUpperCase()}
+              </Avatar>
+
+              <Box>
+                <Text size="xs" fw={500}>
+                  {selfMember.name}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  You {selfMember.id === project?.owner && '• Owner'}
+                </Text>
+              </Box>
+            </Group>
+          </Box>
+        )}
+
+        <Text
+          size="xs"
+          fw={600}
+          c="dimmed"
+          style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+        >
+          Members
+        </Text>
 
         <ScrollArea style={{ maxHeight: 'calc(100vh - 280px)' }}>
           <Stack>
-            {allMembers.map((m) => (
-              <Group key={m.id} justify="space-between" gap={8}>
-                <Group gap={8}>
-                  <Avatar size={28} radius="xl" color="indigo">
-                    {m.name?.slice(0, 2)?.toUpperCase()}
-                  </Avatar>
-                  <Box>
-                    <Text size="xs" fw={500} lineClamp={1}>
-                      {m.name}
-                    </Text>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
-                      {m.id === project?.owner ? 'Owner' : `Member`}
-                    </Text>
-                  </Box>
+            {otherMembers.map((m) => {
+              const isSelected = selectedMemberId === m.id;
+
+              return (
+                <Group
+                  key={m.id}
+                  justify="space-between"
+                  gap={8}
+                  onClick={() => onSelectMember?.(m)}
+                  style={{
+                    padding: '6px',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    background: isSelected ? '#EEF0FF' : 'transparent',
+                  }}
+                >
+                  <Group gap={8}>
+                    <Avatar size={28} radius="xl" color="indigo">
+                      {m.name?.slice(0, 2)?.toUpperCase()}
+                    </Avatar>
+
+                    <Box>
+                      <Text size="xs" fw={500} lineClamp={1}>
+                        {m.name}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {m.id === project?.owner ? 'Owner' : 'Member'}
+                      </Text>
+                    </Box>
+                  </Group>
+
+                  {isOwner && m.id !== project?.owner && (
+                    <ActionIcon
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMember(m.id);
+                      }}
+                    >
+                      <IconX size={11} />
+                    </ActionIcon>
+                  )}
                 </Group>
-                {isOwner && m.id !== user!.id && m.id !== project?.owner && (
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="red"
-                    onClick={() => removeMember(m.id)}
-                  >
-                    <IconX size={11} />
-                  </ActionIcon>
-                )}
-              </Group>
-            ))}
+              );
+            })}
           </Stack>
         </ScrollArea>
       </Box>

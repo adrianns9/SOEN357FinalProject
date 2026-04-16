@@ -18,6 +18,8 @@ import {
   Badge,
   Skeleton,
   Paper,
+  AppShell,
+  Container,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -33,6 +35,8 @@ import type { Project } from '@/schemas';
 import { useCreateProject, useDeleteProject, useProjects } from '@/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+
+import classes from './ProjectsPage.module.css';
 
 interface Props {
   project: Project;
@@ -158,23 +162,10 @@ export function ProjectsPage() {
   }, []);
 
   return (
-    <Box style={{ minHeight: '100vh', background: 'var(--col-bg)' }}>
+    <AppShell padding="md" header={{ height: 60 }}>
       {/* Header */}
-      <Box
-        style={{
-          background: 'white',
-          borderBottom: '1px solid #E5E7EB',
-          padding: '0 24px',
-          height: 60,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        <Group gap={10}>
+      <AppShell.Header className={classes.header} p="md">
+        <Group gap="sm">
           <Box
             style={{
               width: 30,
@@ -198,7 +189,7 @@ export function ProjectsPage() {
         </Group>
         <Group>
           <Group gap={8}>
-            <Avatar size="sm" color="indigo">
+            <Avatar size="sm" color="indigo" radius="xl">
               {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
             </Avatar>
             <Text size="sm" fw={500}>
@@ -209,53 +200,59 @@ export function ProjectsPage() {
             <IconLogout size={18} />
           </ActionIcon>
         </Group>
-      </Box>
+      </AppShell.Header>
 
-      <Box style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
-        <Group justify="space-between" mb="xl">
-          <Box>
-            <Title order={3} style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              Your Projects
-            </Title>
-            <Text c="dimmed" size="sm" mt={4}>
-              Manage your team's work in one place
-            </Text>
-          </Box>
-          <Button leftSection={<IconPlus size={16} />} onClick={open}>
-            New project
-          </Button>
-        </Group>
-
-        {isLoading ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} height={180} />
-            ))}
-          </SimpleGrid>
-        ) : projects?.length === 0 ? (
-          <Paper
-            p="xl"
-            style={{ textAlign: 'center', border: '2px dashed #E0E4FF', background: 'transparent' }}
-          >
-            <IconLayoutKanban size={40} color="#C7D2FE" style={{ marginBottom: 12 }} />
-            <Title order={5} c="dimmed" mb={4}>
-              No projects yet
-            </Title>
-            <Text size="sm" c="dimmed" mb="md">
-              Create your first project to get started with your team
-            </Text>
-            <Button variant="light" onClick={open} leftSection={<IconPlus size={14} />}>
-              Create project
+      <AppShell.Main>
+        <Container size="xl">
+          <Group justify="space-between" mb="xl">
+            <Box>
+              <Title order={3} style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                Your Projects
+              </Title>
+              <Text c="dimmed" size="sm" mt={4}>
+                Manage your team's work in one place
+              </Text>
+            </Box>
+            <Button leftSection={<IconPlus size={16} />} onClick={open}>
+              New project
             </Button>
-          </Paper>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-            {projects?.map((p) => (
-              <ProjectCard key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
-            ))}
-          </SimpleGrid>
-        )}
-      </Box>
+          </Group>
+
+          {isLoading ? (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} height={180} />
+              ))}
+            </SimpleGrid>
+          ) : projects?.length === 0 ? (
+            <Paper
+              p="xl"
+              style={{
+                textAlign: 'center',
+                border: '2px dashed #E0E4FF',
+                background: 'transparent',
+              }}
+            >
+              <IconLayoutKanban size={40} color="#C7D2FE" style={{ marginBottom: 12 }} />
+              <Title order={5} c="dimmed" mb={4}>
+                No projects yet
+              </Title>
+              <Text size="sm" c="dimmed" mb="md">
+                Create your first project to get started with your team
+              </Text>
+              <Button variant="light" onClick={open} leftSection={<IconPlus size={14} />}>
+                Create project
+              </Button>
+            </Paper>
+          ) : (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+              {projects?.map((p) => (
+                <ProjectCard key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
+              ))}
+            </SimpleGrid>
+          )}
+        </Container>
+      </AppShell.Main>
 
       <Modal opened={opened} onClose={close} title="New Project">
         <Stack gap="sm">
@@ -287,6 +284,6 @@ export function ProjectsPage() {
           </Group>
         </Stack>
       </Modal>
-    </Box>
+    </AppShell>
   );
 }

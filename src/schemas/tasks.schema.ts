@@ -22,7 +22,7 @@ export const TaskSchema = BaseSchema.extend({
   project: z.string(),
   status: TaskStatusSchema,
 
-  assignee: z.array(z.string()),
+  assignee: z.array(z.string()).optional(),
 });
 
 export type Task = z.infer<typeof TaskSchema>;
@@ -30,7 +30,7 @@ export type Task = z.infer<typeof TaskSchema>;
 export const TaskExpandedSchema = TaskSchema.extend({
   expand: z.object({
     project: ProjectSchema,
-    assignee: z.array(UserSchema),
+    assignee: z.array(UserSchema).optional(),
   }),
 });
 

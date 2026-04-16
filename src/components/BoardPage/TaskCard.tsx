@@ -30,7 +30,7 @@ export function TaskCard({ task, onClick }: Props) {
         {task.title}
       </Text>
       <Group justify="flex-end" mt={4} gap="xs">
-        {assignees.map((assignee) => {
+        {assignees?.map((assignee) => {
           return (
             <Tooltip key={assignee.id} label={assignee.name} withArrow>
               <Avatar size={22} radius="xl" color="indigo" style={{ cursor: 'default' }}>

@@ -86,7 +86,12 @@ export function AddTaskModal({ opened, onClose, projectId, defaultStatus, member
           />
 
           <Group grow>
-            <Select label="Status" data={statusData} {...form.getInputProps('status')} />
+            <Select
+              allowDeselect={false}
+              label="Status"
+              data={statusData}
+              {...form.getInputProps('status')}
+            />
 
             <MultiSelect
               label="Assignee"

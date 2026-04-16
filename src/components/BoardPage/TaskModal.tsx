@@ -187,7 +187,7 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
         title: task.title || '',
         description: task.description || '',
         status: task.status || 'backlog',
-        assignee: task.assignee || [],
+        assignee: task?.expand?.assignee?.map((m) => m.name!) || [],
       });
   }, [task]);
 
@@ -196,7 +196,7 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
   const handleSubmit = form.onSubmit((values) => {
     const data = {
       ...values,
-      assignee: values.assignee?.map((a) => members.find((m) => m.id === a)!.id!) || [],
+      assignee: values.assignee?.map((a) => members.find((m) => m.name === a)!.id!) || [],
     };
     updateTask.mutate(
       { id: task.id, data },
@@ -250,7 +250,12 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
               <TextInput label="Title" {...form.getInputProps('title')} />
               <Textarea label="Description" {...form.getInputProps('description')} />
               <Group grow>
-                <Select label="Status" data={statusData} {...form.getInputProps('status')} />
+                <Select
+                  allowDeselect={false}
+                  label="Status"
+                  data={statusData}
+                  {...form.getInputProps('status')}
+                />
                 <MultiSelect
                   label="Assignee"
                   data={memberData}
@@ -324,7 +329,7 @@ export function TaskModal({ projectId, taskId, opened, onClose, members }: Props
                   Assignee(s)
                 </Text>
                 <Group justify="flex-end" mt={4}>
-                  {assignees.map((assignee) => {
+                  {assignees?.map((assignee) => {
                     return (
                       <Tooltip key={assignee.id} label={assignee.name} withArrow>
                         <Avatar size={22} radius="xl" color="indigo" style={{ cursor: 'default' }}>
