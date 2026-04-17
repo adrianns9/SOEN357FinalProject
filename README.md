@@ -89,19 +89,7 @@ This starts a PocketBase instance at **http://localhost:8090** with the followin
 
 ---
 
-#### 4. Import the database schema
-
-1. Open the PocketBase Admin UI at **http://localhost:8090/_/**
-2. Log in using the credentials above
-3. Navigate to **Settings → Import collections**
-4. Upload the `pb_schema.json` file found at the root of this project
-5. Confirm the import
-
-This will create all required collections (projects, tasks, users, messages, etc.).
-
----
-
-#### 5. Start the development server
+#### 4. Start the development server
 
 ```bash
 yarn dev
